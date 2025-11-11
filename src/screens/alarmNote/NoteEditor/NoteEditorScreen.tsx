@@ -28,8 +28,11 @@ export function NoteEditorScreen({
   navigation,
 }: Props): React.JSX.Element {
   const {noteId} = route.params || {};
-  const {getNoteById, createNote, updateNote, deleteNote, loading} =
-    useNotesStore();
+  const notes = useNotesStore(state => state.notes);
+  const createNote = useNotesStore(state => state.createNote);
+  const updateNote = useNotesStore(state => state.updateNote);
+  const deleteNote = useNotesStore(state => state.deleteNote);
+  const loading = useNotesStore(state => state.loading);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -40,13 +43,14 @@ export function NoteEditorScreen({
   // Load note nếu edit mode
   useEffect(() => {
     if (noteId) {
-      const note = getNoteById(noteId);
+      const note = notes.find(n => n.id === noteId);
       if (note) {
         setTitle(note.title);
         setContent(note.content || '');
       }
     }
-  }, [noteId, getNoteById]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noteId]);
 
   // Set header title
   useEffect(() => {

@@ -21,8 +21,6 @@ interface AlarmsState {
   updateAlarm: (input: UpdateAlarmInput) => Promise<Alarm | null>;
   deleteAlarm: (id: string) => Promise<void>;
   toggleAlarmEnabled: (id: string, enabled: boolean) => Promise<void>;
-  getAlarmById: (id: string) => Alarm | undefined;
-  getAlarmsByNoteId: (noteId: string) => Alarm[];
 }
 
 export const useAlarmsStore = create<AlarmsState>((set, get) => ({
@@ -164,26 +162,6 @@ export const useAlarmsStore = create<AlarmsState>((set, get) => ({
       console.error('[AlarmsStore] Lỗi toggle alarm:', error);
       throw error;
     }
-  },
-
-  /**
-   * Mục đích: Lấy alarm theo ID từ state
-   * Tham số vào: id (string)
-   * Tham số ra: Alarm | undefined
-   * Khi nào dùng: Selector để lấy alarm từ state
-   */
-  getAlarmById: (id: string) => {
-    return get().alarms.find(a => a.id === id);
-  },
-
-  /**
-   * Mục đích: Lấy tất cả alarms của một note từ state
-   * Tham số vào: noteId (string)
-   * Tham số ra: Alarm[]
-   * Khi nào dùng: Selector để lấy alarms của note từ state
-   */
-  getAlarmsByNoteId: (noteId: string) => {
-    return get().alarms.filter(a => a.noteId === noteId);
   },
 }));
 

@@ -5,7 +5,7 @@
  * Khi nào dùng: Khi người dùng tạo mới hoặc chỉnh sửa báo thức
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {
   View,
   Text,
@@ -33,8 +33,10 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
   const {noteId, alarmId} = route.params;
   const isEditing = !!alarmId;
 
-  const alarm = useAlarmsStore(state =>
-    alarmId ? state.getAlarmById(alarmId) : undefined,
+  const alarms = useAlarmsStore(state => state.alarms);
+  const alarm = useMemo(
+    () => (alarmId ? alarms.find(a => a.id === alarmId) : undefined),
+    [alarms, alarmId]
   );
   const createAlarm = useAlarmsStore(state => state.createAlarm);
   const updateAlarm = useAlarmsStore(state => state.updateAlarm);
@@ -58,7 +60,8 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
       setDateISO(alarm.dateISO || dayjs().format('YYYY-MM-DD'));
       setDaysOfWeek(alarm.daysOfWeek || []);
     }
-  }, [alarm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alarmId]);
 
   /**
    * Mục đích: Toggle ngày trong tuần

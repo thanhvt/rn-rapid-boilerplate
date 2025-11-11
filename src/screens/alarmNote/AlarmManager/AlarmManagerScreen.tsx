@@ -5,7 +5,7 @@
  * Khi nào dùng: Khi người dùng muốn xem/quản lý báo thức của ghi chú
  */
 
-import React, {useEffect} from 'react';
+import React, {useEffect, useMemo} from 'react';
 import {
   View,
   Text,
@@ -30,11 +30,16 @@ export function AlarmManagerScreen({
 }: Props): React.JSX.Element {
   const {noteId} = route.params;
 
-  const note = useNotesStore(state => state.getNoteById(noteId));
-  // Lấy alarms từ state bằng selector
-  const alarms = useAlarmsStore(state =>
-    state.alarms.filter(a => a.noteId === noteId)
+  const notes = useNotesStore(state => state.notes);
+  const note = useMemo(() => notes.find(n => n.id === noteId), [notes, noteId]);
+
+  // Lấy alarms từ state và filter bằng useMemo để tránh re-render
+  const allAlarms = useAlarmsStore(state => state.alarms);
+  const alarms = useMemo(
+    () => allAlarms.filter(a => a.noteId === noteId),
+    [allAlarms, noteId]
   );
+
   const loading = useAlarmsStore(state => state.loading);
   const loadAlarmsByNoteId = useAlarmsStore(state => state.loadAlarmsByNoteId);
   const toggleAlarmEnabled = useAlarmsStore(state => state.toggleAlarmEnabled);

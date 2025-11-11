@@ -34,7 +34,7 @@ type SortOption = 'date' | 'title';
 
 export function NotesListScreen({navigation}: Props): React.JSX.Element {
   const {notes, loading, loadNotes, searchNotes, deleteNote} = useNotesStore();
-  const {getAlarmsByNoteId} = useAlarmsStore();
+  const alarms = useAlarmsStore(state => state.alarms);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('date');
@@ -43,7 +43,8 @@ export function NotesListScreen({navigation}: Props): React.JSX.Element {
   // Load notes khi mount
   useEffect(() => {
     loadNotes();
-  }, [loadNotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Xử lý search
   const handleSearch = async (query: string) => {
@@ -96,8 +97,8 @@ export function NotesListScreen({navigation}: Props): React.JSX.Element {
 
   // Render note item
   const renderNoteItem = ({item}: {item: Note}) => {
-    const alarms = getAlarmsByNoteId(item.id);
-    const enabledAlarmsCount = alarms.filter(a => a.enabled).length;
+    const noteAlarms = alarms.filter(a => a.noteId === item.id);
+    const enabledAlarmsCount = noteAlarms.filter(a => a.enabled).length;
 
     return (
       <TouchableOpacity

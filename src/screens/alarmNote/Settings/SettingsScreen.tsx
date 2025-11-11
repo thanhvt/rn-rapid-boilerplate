@@ -26,13 +26,11 @@ type Props = NativeStackScreenProps<RootStackParamList, 'AlarmNoteSettings'>;
 const SNOOZE_OPTIONS = [5, 10, 15, 30];
 
 export function SettingsScreen({}: Props): React.JSX.Element {
-  const {
-    snoozeMinutesDefault,
-    timezone,
-    loading,
-    loadPreferences,
-    setSnoozeMinutes,
-  } = useSettingsStore();
+  const snoozeMinutesDefault = useSettingsStore(state => state.snoozeMinutesDefault);
+  const timezone = useSettingsStore(state => state.timezone);
+  const loading = useSettingsStore(state => state.loading);
+  const loadPreferences = useSettingsStore(state => state.loadPreferences);
+  const setSnoozeMinutes = useSettingsStore(state => state.setSnoozeMinutes);
 
   const [notificationPermission, setNotificationPermission] = useState<
     'granted' | 'denied' | 'unknown'
@@ -43,7 +41,8 @@ export function SettingsScreen({}: Props): React.JSX.Element {
   useEffect(() => {
     loadPreferences();
     checkNotificationPermission();
-  }, [loadPreferences]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Kiểm tra notification permission
   const checkNotificationPermission = async () => {
