@@ -4,6 +4,7 @@ import { MainTabParamList } from "./types";
 import HomeScreen from "@/screens/home";
 import MoreScreen from "@/screens/MoreScreen";
 import CustomTabBar from "@/navigation/components/CustomTabBar.tsx";
+import {NotesListScreen} from "@/screens/alarmNote/NotesList/NotesListScreen";
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -20,6 +21,13 @@ const MainTabNavigator: React.FC = () => {
         component={HomeScreen}
         options={{
           title: "HOME",
+        }}
+      />
+      <Tab.Screen
+        name="NOTES"
+        component={NotesListScreen}
+        options={{
+          title: "NOTES",
         }}
       />
       <Tab.Screen

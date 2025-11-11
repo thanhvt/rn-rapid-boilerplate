@@ -9,12 +9,16 @@
     "generate-translation": "node scripts/translator/index.js"
   },
   "dependencies": {
+    "@gluestack-style/react": "^1.0.57",
+    "@gluestack-ui/themed": "^1.1.73",
     "@gorhom/bottom-sheet": "^5.2.6",
+    "@react-native-community/datetimepicker": "^8.5.0",
     "@react-navigation/bottom-tabs": "^7.4.7",
     "@react-navigation/native": "^7.1.17",
     "@react-navigation/native-stack": "^7.3.26",
     "@reduxjs/toolkit": "^2.9.0",
     "class-variance-authority": "^0.7.1",
+    "dayjs": "^1.11.19",
     "i18next": "^25.5.3",
     "lucide-react-native": "^0.544.0",
     "nativewind": "^4.2.1",
@@ -24,15 +28,18 @@
     "react-native-gesture-handler": "^2.28.0",
     "react-native-localize": "^3.5.2",
     "react-native-mmkv": "^3.3.3",
+    "react-native-permissions": "^5.4.4",
     "react-native-reanimated": "^4.1.2",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "^4.16.0",
+    "react-native-sqlite-storage": "^6.0.1",
     "react-native-svg": "^15.13.0",
     "react-native-url-polyfill": "^3.0.0",
     "react-native-worklets": "^0.6.0",
     "react-redux": "^9.2.0",
     "redux-persist": "^6.0.0",
-    "zod": "^3.25.67"
+    "zod": "^3.25.67",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

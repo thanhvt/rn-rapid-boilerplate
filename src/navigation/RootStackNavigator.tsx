@@ -18,6 +18,10 @@ import AppTextDemoScreen from "@/screens/demos/AppTextDemoScreen";
 import LoginScreen from "@/screens/auth/LoginScreen";
 import RegisterScreen from "@/screens/auth/RegisterScreen";
 import AboutScreen from "@/screens/AboutScreen";
+import {NoteEditorScreen} from "@/screens/alarmNote/NoteEditor/NoteEditorScreen";
+import {AlarmManagerScreen} from "@/screens/alarmNote/AlarmManager/AlarmManagerScreen";
+import {AlarmEditorScreen} from "@/screens/alarmNote/AlarmEditor/AlarmEditorScreen";
+import {SettingsScreen as AlarmNoteSettingsScreen} from "@/screens/alarmNote/Settings/SettingsScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -138,6 +142,35 @@ export default function RootStackNavigator() {
         component={AboutScreen}
         options={{
           title: "About",
+        }}
+      />
+      {/* AlarmNote Screens */}
+      <Stack.Screen
+        name="NoteEditor"
+        component={NoteEditorScreen}
+        options={{
+          title: "Note Editor",
+        }}
+      />
+      <Stack.Screen
+        name="AlarmManager"
+        component={AlarmManagerScreen}
+        options={{
+          title: "Alarm Manager",
+        }}
+      />
+      <Stack.Screen
+        name="AlarmEditor"
+        component={AlarmEditorScreen}
+        options={{
+          title: "Alarm Editor",
+        }}
+      />
+      <Stack.Screen
+        name="AlarmNoteSettings"
+        component={AlarmNoteSettingsScreen}
+        options={{
+          title: "AlarmNote Settings",
         }}
       />
     </Stack.Navigator>

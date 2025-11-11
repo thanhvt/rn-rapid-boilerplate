@@ -18,6 +18,7 @@ import {LanguageHelper} from "@/components/helpers/LanguageHelper.tsx";
 import '@/config/i18n.ts'
 import {DialogProvider} from "@/components/ui/DialogProvider.tsx";
 import {ToastProvider} from "@/components/ui/ToastProvider.tsx";
+import {AlarmNoteInitializer} from "@/components/helpers/AlarmNoteInitializer.tsx";
 
 
 const AppContent: React.FC = () => {
@@ -52,6 +53,7 @@ const AppContent: React.FC = () => {
                 <ToastProvider>
                   <InsetsHelper/>
                   <LanguageHelper/>
+                  <AlarmNoteInitializer/>
                   <RootStackNavigator/>
                 </ToastProvider>
               </DialogProvider>

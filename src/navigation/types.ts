@@ -19,11 +19,17 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   About: undefined;
+  // AlarmNote screens
+  NoteEditor: {noteId?: string};
+  AlarmManager: {noteId: string};
+  AlarmEditor: {noteId: string; alarmId?: string};
+  AlarmNoteSettings: undefined;
 };
 
 // Main Tab Navigator
 export type MainTabParamList = {
   HOME: undefined;
+  NOTES: undefined;
   MORE: undefined;
 };
 
