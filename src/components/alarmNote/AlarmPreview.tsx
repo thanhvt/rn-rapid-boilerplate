@@ -13,10 +13,11 @@ import {useColors} from '@/hooks/useColors';
 import dayjs from 'dayjs';
 
 interface AlarmPreviewProps {
-  type: 'ONE_TIME' | 'REPEATING';
+  type: 'ONE_TIME' | 'REPEATING' | 'RANDOM';
   time: string;
   date?: string;
   selectedDays?: number[];
+  randomTimes?: Record<number, string>;
 }
 
 const DAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -26,6 +27,7 @@ export function AlarmPreview({
   time,
   date,
   selectedDays = [],
+  randomTimes,
 }: AlarmPreviewProps): React.JSX.Element {
   const colors = useColors();
 
@@ -57,12 +59,21 @@ export function AlarmPreview({
       return `Báo thức sẽ lặp lại vào ${dayNames} lúc ${time}`;
     }
 
+    if (type === 'RANDOM' && selectedDays.length > 0 && randomTimes) {
+      // Hiển thị chi tiết giờ ngẫu nhiên cho từng ngày
+      const dayTimeDetails = selectedDays
+        .map(d => `${DAY_LABELS[d]}: ${randomTimes[d] || '??:??'}`)
+        .join(', ');
+      return `Báo thức ngẫu nhiên - ${dayTimeDetails}`;
+    }
+
     return 'Vui lòng chọn thời gian và ngày';
   };
 
   const isValid =
     (type === 'ONE_TIME' && date && time) ||
-    (type === 'REPEATING' && selectedDays.length > 0 && time);
+    (type === 'REPEATING' && selectedDays.length > 0 && time) ||
+    (type === 'RANDOM' && selectedDays.length > 0);
 
   if (!isValid) {
     return <View />;
@@ -102,14 +113,17 @@ export function AlarmPreview({
       <Animated.View
         entering={FadeInDown.delay(300).springify()}
         className="flex-row flex-wrap gap-2">
-        <Badge variant="primary" size="md">
-          <View className="flex-row items-center gap-1.5">
-            <Icon name="Clock" className="w-4 h-4 text-white" />
-            <AppText variant="body" weight="semibold" className="text-white">
-              {time}
-            </AppText>
-          </View>
-        </Badge>
+        {/* Chỉ hiển thị time badge cho ONE_TIME và REPEATING */}
+        {type !== 'RANDOM' && (
+          <Badge variant="primary" size="md">
+            <View className="flex-row items-center gap-1.5">
+              <Icon name="Clock" className="w-4 h-4 text-white" />
+              <AppText variant="body" weight="semibold" className="text-white">
+                {time}
+              </AppText>
+            </View>
+          </Badge>
+        )}
 
         {type === 'ONE_TIME' && date && (
           <Badge variant="secondary" size="md">
@@ -134,7 +148,48 @@ export function AlarmPreview({
             </View>
           </Badge>
         )}
+
+        {type === 'RANDOM' && selectedDays.length > 0 && (
+          <Badge variant="warning" size="md">
+            <View className="flex-row items-center gap-1.5">
+              <Icon name="Shuffle" className="w-4 h-4 text-white" />
+              <AppText variant="body" weight="semibold" className="text-white">
+                {selectedDays.length === 7
+                  ? 'Hàng ngày'
+                  : `${selectedDays.length} ngày`}
+              </AppText>
+            </View>
+          </Badge>
+        )}
       </Animated.View>
+
+      {/* Chi tiết random times cho từng ngày */}
+      {type === 'RANDOM' && selectedDays.length > 0 && randomTimes && (
+        <Animated.View
+          entering={FadeInDown.delay(400).springify()}
+          className="mt-4 pt-4 border-t"
+          style={{borderTopColor: colors.primary + '30'}}>
+          <AppText variant="caption" weight="semibold" className="text-foreground/70 mb-2">
+            Giờ ngẫu nhiên cho từng ngày:
+          </AppText>
+          <View className="flex-row flex-wrap gap-2">
+            {selectedDays.map(day => (
+              <View
+                key={day}
+                className="px-3 py-1.5 rounded-lg"
+                style={{backgroundColor: colors.background}}>
+                <AppText variant="caption" className="text-foreground">
+                  <AppText variant="caption" weight="semibold" className="text-primary">
+                    {DAY_LABELS[day]}:
+                  </AppText>
+                  {' '}
+                  {randomTimes[day] || '??:??'}
+                </AppText>
+              </View>
+            ))}
+          </View>
+        </Animated.View>
+      )}
     </Animated.View>
   );
 }

@@ -160,6 +160,65 @@ export function calculateNextFireAtRepeating(
 }
 
 /**
+ * Mục đích: Tính nextFireAt cho RANDOM alarm
+ * Tham số vào: randomTimes (Record<number, string>), daysOfWeek (number[]), tz (string)
+ * Tham số ra: number (timestamp ms) hoặc null
+ * Khi nào dùng: Khi tạo/cập nhật RANDOM alarm
+ */
+export function calculateNextFireAtRandom(
+  randomTimes: Record<number, string>,
+  daysOfWeek: number[],
+  tz: string = 'Asia/Ho_Chi_Minh',
+): number | null {
+  try {
+    console.log('[AlarmLogic] 🔍 calculateNextFireAtRandom INPUT:');
+    console.log('[AlarmLogic]   - randomTimes:', randomTimes);
+    console.log('[AlarmLogic]   - daysOfWeek:', daysOfWeek);
+    console.log('[AlarmLogic]   - timezone:', tz);
+
+    const now = dayjs();
+    console.log('[AlarmLogic] 🕐 THỜI GIAN HIỆN TẠI:', now.format());
+
+    // Tìm lần reo kế tiếp trong 7 ngày tới
+    for (let i = 0; i < 7; i++) {
+      const candidate = now.add(i, 'day');
+      const candidateWeekday = candidate.day(); // 0=Sunday, 1=Monday, ...
+
+      // Kiểm tra xem ngày này có trong daysOfWeek không
+      if (daysOfWeek.includes(candidateWeekday)) {
+        const timeHHmm = randomTimes[candidateWeekday];
+        if (!timeHHmm) {
+          console.warn('[AlarmLogic] Không có random time cho ngày:', candidateWeekday);
+          continue;
+        }
+
+        const [hour, minute] = timeHHmm.split(':').map(Number);
+        const candidateWithTime = candidate
+          .hour(hour)
+          .minute(minute)
+          .second(0)
+          .millisecond(0);
+
+        // Nếu là hôm nay, phải sau thời điểm hiện tại
+        if (i === 0 && candidateWithTime.isSameOrBefore(now)) {
+          continue;
+        }
+
+        const timestamp = candidateWithTime.valueOf();
+        console.log('[AlarmLogic] RANDOM nextFireAt:', candidateWithTime.format(), '- Timestamp:', timestamp);
+        return timestamp;
+      }
+    }
+
+    console.error('[AlarmLogic] Không tìm thấy nextFireAt cho RANDOM');
+    return null;
+  } catch (error) {
+    console.error('[AlarmLogic] Lỗi tính RANDOM nextFireAt:', error);
+    return null;
+  }
+}
+
+/**
  * Mục đích: Tính nextFireAt cho alarm (wrapper)
  * Tham số vào: alarm (Partial<Alarm>), tz (string)
  * Tham số ra: number | null
@@ -186,6 +245,12 @@ export function calculateNextFireAt(
       return null;
     }
     return calculateNextFireAtRepeating(alarm.timeHHmm, alarm.daysOfWeek, tz);
+  } else if (alarm.type === 'RANDOM') {
+    if (!alarm.randomTimes || !alarm.daysOfWeek || alarm.daysOfWeek.length === 0) {
+      console.error('[AlarmLogic] RANDOM phải có randomTimes và daysOfWeek');
+      return null;
+    }
+    return calculateNextFireAtRandom(alarm.randomTimes, alarm.daysOfWeek, tz);
   }
 
   return null;

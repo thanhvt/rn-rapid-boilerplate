@@ -106,6 +106,8 @@ export async function scheduleAlarmNotification(
       await scheduleOneTimeAlarm(alarm, noteTitle, noteContent);
     } else if (alarm.type === 'REPEATING') {
       await scheduleRepeatingAlarm(alarm, noteTitle, noteContent);
+    } else if (alarm.type === 'RANDOM') {
+      await scheduleRandomAlarm(alarm, noteTitle, noteContent);
     }
 
     console.log('[NotificationService] ✅ Đã schedule alarm thành công:', alarm.id);
@@ -328,6 +330,127 @@ async function scheduleRepeatingAlarm(
   }
 
   console.log('[NotificationService] ✅ scheduleRepeatingAlarm completed');
+}
+
+/**
+ * Mục đích: Schedule RANDOM alarm
+ * Tham số vào: alarm (Alarm), noteTitle (string), noteContent (string | null)
+ * Tham số ra: Promise<void>
+ * Khi nào dùng: Internal helper
+ */
+async function scheduleRandomAlarm(
+  alarm: Alarm,
+  noteTitle: string,
+  noteContent?: string | null,
+): Promise<void> {
+  if (!alarm.daysOfWeek || alarm.daysOfWeek.length === 0) {
+    throw new Error('RANDOM alarm phải có daysOfWeek');
+  }
+  if (!alarm.randomTimes) {
+    throw new Error('RANDOM alarm phải có randomTimes');
+  }
+
+  console.log('[NotificationService] 🎲 Schedule RANDOM:', {
+    id: alarm.id,
+    title: noteTitle,
+    weekdays: alarm.daysOfWeek,
+    randomTimes: alarm.randomTimes,
+  });
+
+  // Schedule cho mỗi ngày trong tuần với random time riêng
+  for (const weekday of alarm.daysOfWeek) {
+    const timeHHmm = alarm.randomTimes[weekday];
+    if (!timeHHmm) {
+      console.warn('[NotificationService] Không có random time cho ngày:', weekday);
+      continue;
+    }
+
+    const [hour, minute] = timeHHmm.split(':').map(Number);
+    const notificationId = `${alarm.id}-${weekday}`;
+
+    console.log('[NotificationService] 🎲 Schedule RANDOM cho ngày:', {
+      weekday,
+      time: timeHHmm,
+      hour,
+      minute,
+      notificationId,
+    });
+
+    // Tính timestamp cho lần đầu tiên reo (ngày tiếp theo có weekday này)
+    const now = new Date();
+    const targetDate = new Date();
+    targetDate.setHours(hour, minute, 0, 0);
+
+    // Tìm ngày tiếp theo có weekday này
+    const currentWeekday = targetDate.getDay(); // 0 = Sunday, 1 = Monday, ...
+    let daysUntilTarget = weekday - currentWeekday;
+    if (daysUntilTarget < 0 || (daysUntilTarget === 0 && targetDate <= now)) {
+      daysUntilTarget += 7;
+    }
+    targetDate.setDate(targetDate.getDate() + daysUntilTarget);
+
+    // Kiểm tra nếu targetDate vẫn trong quá khứ (edge case)
+    if (targetDate.getTime() <= now.getTime()) {
+      console.warn('[NotificationService] ⚠️ targetDate trong quá khứ, skip weekday:', weekday);
+      continue;
+    }
+
+    console.log('[NotificationService] 🎲 Schedule RANDOM cho weekday:', {
+      weekday,
+      time: timeHHmm,
+      targetDate: targetDate.toISOString(),
+      timestamp: targetDate.getTime(),
+    });
+
+    const trigger: TimestampTrigger = {
+      type: TriggerType.TIMESTAMP,
+      timestamp: targetDate.getTime(),
+      repeatFrequency: RepeatFrequency.WEEKLY,
+    };
+
+    // Format notification body
+    const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    let body = `🎲 Báo thức ngẫu nhiên vào ${dayNames[weekday]} lúc ${timeHHmm}`;
+    if (noteContent) {
+      const contentPreview = noteContent.length > 100
+        ? noteContent.substring(0, 100) + '...'
+        : noteContent;
+      body += `\n\n${contentPreview}`;
+    }
+
+    await notifee.createTriggerNotification(
+      {
+        id: notificationId,
+        title: `🔔 ${noteTitle}`,
+        body: body,
+        subtitle: 'Báo thức ngẫu nhiên',
+        data: {
+          alarmId: alarm.id,
+          noteId: alarm.noteId,
+          weekday: weekday.toString(),
+        },
+        ios: {
+          sound: 'default',
+          categoryId: 'ALARM_NOTE',
+          critical: true,
+          criticalVolume: 1.0,
+          badgeCount: 1,
+        },
+      },
+      trigger,
+    );
+
+    console.log(
+      '[NotificationService] ✅ Đã schedule RANDOM notification:',
+      notificationId,
+      'cho ngày:',
+      weekday,
+      'lúc:',
+      timeHHmm,
+    );
+  }
+
+  console.log('[NotificationService] ✅ scheduleRandomAlarm completed');
 }
 
 /**

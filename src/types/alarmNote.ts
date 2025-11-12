@@ -28,7 +28,7 @@ export interface UpdateNoteInput {
 
 // ============ Alarm Models ============
 
-export type AlarmType = 'ONE_TIME' | 'REPEATING';
+export type AlarmType = 'ONE_TIME' | 'REPEATING' | 'RANDOM';
 
 export interface Alarm {
   id: string;
@@ -36,7 +36,8 @@ export interface Alarm {
   type: AlarmType;
   timeHHmm: string; // Format: "HH:mm" (24h)
   dateISO: string | null; // ISO date string cho ONE_TIME
-  daysOfWeek: number[] | null; // [0-6] cho REPEATING (0=Sunday)
+  daysOfWeek: number[] | null; // [0-6] cho REPEATING và RANDOM (0=Sunday)
+  randomTimes: Record<number, string> | null; // {0: '09:30', 1: '14:15'} cho RANDOM
   enabled: boolean;
   nextFireAt: number | null; // Unix timestamp (ms)
   createdAt: number;
@@ -48,7 +49,8 @@ export interface CreateAlarmInput {
   type: AlarmType;
   timeHHmm: string;
   dateISO?: string; // Required nếu type = ONE_TIME
-  daysOfWeek?: number[]; // Required nếu type = REPEATING
+  daysOfWeek?: number[]; // Required nếu type = REPEATING hoặc RANDOM
+  randomTimes?: Record<number, string>; // Required nếu type = RANDOM
 }
 
 export interface UpdateAlarmInput {
@@ -57,6 +59,7 @@ export interface UpdateAlarmInput {
   timeHHmm?: string;
   dateISO?: string;
   daysOfWeek?: number[];
+  randomTimes?: Record<number, string>;
   enabled?: boolean;
 }
 
@@ -88,6 +91,7 @@ export interface AlarmRow {
   timeHHmm: string;
   dateISO: string | null;
   daysOfWeek: string | null; // JSON string
+  randomTimes: string | null; // JSON string cho RANDOM type
   enabled: number; // SQLite boolean (0/1)
   nextFireAt: number | null;
   createdAt: number;
@@ -115,6 +119,7 @@ export function mapAlarmRowToModel(row: AlarmRow): Alarm {
     timeHHmm: row.timeHHmm,
     dateISO: row.dateISO,
     daysOfWeek: row.daysOfWeek ? JSON.parse(row.daysOfWeek) : null,
+    randomTimes: row.randomTimes ? JSON.parse(row.randomTimes) : null,
     enabled: row.enabled === 1,
     nextFireAt: row.nextFireAt,
     createdAt: row.createdAt,
@@ -138,6 +143,9 @@ export function mapAlarmModelToRow(alarm: Partial<Alarm>): Partial<AlarmRow> {
   if (alarm.dateISO !== undefined) row.dateISO = alarm.dateISO;
   if (alarm.daysOfWeek !== undefined) {
     row.daysOfWeek = alarm.daysOfWeek ? JSON.stringify(alarm.daysOfWeek) : null;
+  }
+  if (alarm.randomTimes !== undefined) {
+    row.randomTimes = alarm.randomTimes ? JSON.stringify(alarm.randomTimes) : null;
   }
   if (alarm.enabled !== undefined) row.enabled = alarm.enabled ? 1 : 0;
   if (alarm.nextFireAt !== undefined) row.nextFireAt = alarm.nextFireAt;

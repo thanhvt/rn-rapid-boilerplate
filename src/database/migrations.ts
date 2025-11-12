@@ -49,10 +49,11 @@ async function migrationV1(db: SQLiteDatabase): Promise<void> {
     CREATE TABLE IF NOT EXISTS Alarms (
       id TEXT PRIMARY KEY NOT NULL,
       noteId TEXT NOT NULL,
-      type TEXT NOT NULL CHECK(type IN ('ONE_TIME', 'REPEATING')),
+      type TEXT NOT NULL CHECK(type IN ('ONE_TIME', 'REPEATING', 'RANDOM')),
       timeHHmm TEXT NOT NULL,
       dateISO TEXT,
       daysOfWeek TEXT,
+      randomTimes TEXT,
       enabled INTEGER NOT NULL DEFAULT 1,
       nextFireAt INTEGER,
       createdAt INTEGER NOT NULL,
@@ -117,6 +118,63 @@ async function seedPreferences(db: SQLiteDatabase): Promise<void> {
 }
 
 /**
+ * Mục đích: Migration v2 - Thêm support cho RANDOM alarm type
+ * Tham số vào: db (SQLiteDatabase)
+ * Tham số ra: Promise<void>
+ * Khi nào dùng: Upgrade từ v1 lên v2
+ */
+async function migrationV2(db: SQLiteDatabase): Promise<void> {
+  console.log('[Migration] Chạy migration v2 - Thêm RANDOM alarm type');
+
+  // SQLite không cho phép ALTER CHECK constraint trực tiếp
+  // Cần recreate table với CHECK constraint mới
+
+  // Bước 1: Tạo bảng mới với schema đầy đủ
+  await db.executeSql(`
+    CREATE TABLE IF NOT EXISTS Alarms_new (
+      id TEXT PRIMARY KEY NOT NULL,
+      noteId TEXT NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('ONE_TIME', 'REPEATING', 'RANDOM')),
+      timeHHmm TEXT NOT NULL,
+      dateISO TEXT,
+      daysOfWeek TEXT,
+      randomTimes TEXT,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      nextFireAt INTEGER,
+      createdAt INTEGER NOT NULL,
+      updatedAt INTEGER NOT NULL,
+      FOREIGN KEY (noteId) REFERENCES Notes(id) ON DELETE CASCADE
+    );
+  `);
+
+  // Bước 2: Copy data từ bảng cũ sang bảng mới
+  await db.executeSql(`
+    INSERT INTO Alarms_new (id, noteId, type, timeHHmm, dateISO, daysOfWeek, randomTimes, enabled, nextFireAt, createdAt, updatedAt)
+    SELECT id, noteId, type, timeHHmm, dateISO, daysOfWeek, NULL as randomTimes, enabled, nextFireAt, createdAt, updatedAt
+    FROM Alarms;
+  `);
+
+  // Bước 3: Xóa bảng cũ
+  await db.executeSql(`DROP TABLE Alarms;`);
+
+  // Bước 4: Rename bảng mới thành tên cũ
+  await db.executeSql(`ALTER TABLE Alarms_new RENAME TO Alarms;`);
+
+  // Bước 5: Recreate indexes
+  await db.executeSql(`
+    CREATE INDEX IF NOT EXISTS idx_alarms_note
+    ON Alarms(noteId);
+  `);
+
+  await db.executeSql(`
+    CREATE INDEX IF NOT EXISTS idx_alarms_enabled
+    ON Alarms(enabled, nextFireAt);
+  `);
+
+  console.log('[Migration] Migration v2 hoàn thành');
+}
+
+/**
  * Mục đích: Lấy version hiện tại của database
  * Tham số vào: db (SQLiteDatabase)
  * Tham số ra: Promise<number>
@@ -158,7 +216,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   console.log('[Migration] Bắt đầu kiểm tra migrations');
 
   const currentVersion = await getCurrentVersion(db);
-  const targetVersion = 1; // Version hiện tại của schema
+  const targetVersion = 2; // Version hiện tại của schema
 
   if (currentVersion >= targetVersion) {
     console.log('[Migration] Database đã ở version mới nhất');
@@ -173,11 +231,11 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
       await setVersion(db, 1);
     }
 
-    // Thêm migrations tương lai ở đây
-    // if (currentVersion < 2) {
-    //   await migrationV2(db);
-    //   await setVersion(db, 2);
-    // }
+    // Migration v2: Thêm RANDOM alarm type
+    if (currentVersion < 2) {
+      await migrationV2(db);
+      await setVersion(db, 2);
+    }
 
     console.log('[Migration] Tất cả migrations hoàn thành');
   } catch (error) {
@@ -199,5 +257,24 @@ export async function dropAllTables(db: SQLiteDatabase): Promise<void> {
   await db.executeSql('DROP TABLE IF EXISTS Preferences');
   await db.executeSql('PRAGMA user_version = 0');
   console.log('[Migration] Đã xóa tất cả bảng');
+}
+
+/**
+ * Mục đích: Force chạy lại migration v2 (dùng khi cần fix migration)
+ * Tham số vào: db (SQLiteDatabase)
+ * Tham số ra: Promise<void>
+ * Khi nào dùng: Khi cần force update schema mà không mất data
+ */
+export async function forceMigrationV2(db: SQLiteDatabase): Promise<void> {
+  console.log('[Migration] Force chạy lại migration v2');
+
+  // Set version về 1 để trigger migration v2
+  await db.executeSql('PRAGMA user_version = 1');
+
+  // Chạy lại migration v2
+  await migrationV2(db);
+  await setVersion(db, 2);
+
+  console.log('[Migration] Force migration v2 hoàn thành');
 }
 

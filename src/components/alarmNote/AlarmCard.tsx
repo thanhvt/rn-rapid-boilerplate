@@ -95,6 +95,8 @@ export function AlarmCard({
   // Format thời gian hiển thị
   const displayTime = alarm.type === 'ONE_TIME'
     ? `${alarm.timeHHmm} - ${alarm.dateISO}`
+    : alarm.type === 'RANDOM'
+    ? 'Ngẫu nhiên'
     : alarm.timeHHmm;
 
   return (
@@ -136,10 +138,20 @@ export function AlarmCard({
             {/* Hiển thị type và days */}
             <View className="flex-row items-center gap-2 mt-1 flex-wrap">
               <Badge
-                variant={alarm.type === 'REPEATING' ? 'primary' : 'secondary'}
+                variant={
+                  alarm.type === 'REPEATING'
+                    ? 'primary'
+                    : alarm.type === 'RANDOM'
+                    ? 'warning'
+                    : 'secondary'
+                }
                 size="sm">
                 <AppText variant="caption" className="text-white" raw>
-                  {alarm.type === 'REPEATING' ? 'Lặp lại' : 'Một lần'}
+                  {alarm.type === 'REPEATING'
+                    ? 'Lặp lại'
+                    : alarm.type === 'RANDOM'
+                    ? 'Ngẫu nhiên'
+                    : 'Một lần'}
                 </AppText>
               </Badge>
 
@@ -148,7 +160,29 @@ export function AlarmCard({
                   {alarm.daysOfWeek.map(d => getDayName(d)).join(', ')}
                 </AppText>
               )}
+
+              {alarm.type === 'RANDOM' && alarm.daysOfWeek && alarm.daysOfWeek.length > 0 && (
+                <AppText variant="caption" className="text-neutrals400">
+                  {alarm.daysOfWeek.map(d => getDayName(d)).join(', ')}
+                </AppText>
+              )}
             </View>
+
+            {/* Hiển thị chi tiết random times */}
+            {alarm.type === 'RANDOM' && alarm.randomTimes && alarm.daysOfWeek && alarm.daysOfWeek.length > 0 && (
+              <View className="mt-2 flex-row flex-wrap gap-1">
+                {alarm.daysOfWeek.map(day => (
+                  <View
+                    key={day}
+                    className="px-2 py-0.5 rounded"
+                    style={{backgroundColor: colors.primary + '20'}}>
+                    <AppText variant="caption" className="text-primary">
+                      {getDayName(day)}: {alarm.randomTimes![day] || '??:??'}
+                    </AppText>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </View>
 

@@ -16,7 +16,7 @@ import {
   validateAlarmInput,
   suggestNextDayForOneTime,
 } from '@/services/alarmLogic';
-import {getDayFullName} from '@/utils/alarmNoteHelpers';
+import {getDayFullName, generateRandomTimesForDays} from '@/utils/alarmNoteHelpers';
 import {TimePicker} from '@/components/pickers/TimePicker';
 import {DatePicker} from '@/components/pickers/DatePicker';
 import dayjs from 'dayjs';
@@ -57,6 +57,9 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(
     alarm?.daysOfWeek || [],
   );
+  const [randomTimes, setRandomTimes] = useState<Record<number, string>>(
+    alarm?.randomTimes || {},
+  );
 
   /**
    * Mục đích: Load alarm data nếu đang edit
@@ -70,6 +73,7 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
       setTimeHHmm(alarm.timeHHmm);
       setDateISO(alarm.dateISO || dayjs().format('YYYY-MM-DD'));
       setDaysOfWeek(alarm.daysOfWeek || []);
+      setRandomTimes(alarm.randomTimes || {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alarmId]);
@@ -81,8 +85,15 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
    * Khi nào dùng: User chọn loại alarm
    */
   const handleTypeChange = useCallback((newType: string) => {
-    setType(newType as AlarmType);
-  }, []);
+    const alarmType = newType as AlarmType;
+    setType(alarmType);
+
+    // Nếu chuyển sang RANDOM, generate random times cho các ngày đã chọn
+    if (alarmType === 'RANDOM' && daysOfWeek.length > 0) {
+      const newRandomTimes = generateRandomTimesForDays(daysOfWeek);
+      setRandomTimes(newRandomTimes);
+    }
+  }, [daysOfWeek]);
 
   /**
    * Mục đích: Toggle ngày trong tuần
@@ -92,13 +103,30 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
    */
   const toggleDay = useCallback(
     (day: number) => {
+      let newDaysOfWeek: number[];
       if (daysOfWeek.includes(day)) {
-        setDaysOfWeek(daysOfWeek.filter(d => d !== day));
+        newDaysOfWeek = daysOfWeek.filter(d => d !== day);
+        setDaysOfWeek(newDaysOfWeek);
+
+        // Nếu là RANDOM type, xóa random time cho ngày này
+        if (type === 'RANDOM') {
+          const newRandomTimes = {...randomTimes};
+          delete newRandomTimes[day];
+          setRandomTimes(newRandomTimes);
+        }
       } else {
-        setDaysOfWeek([...daysOfWeek, day].sort());
+        newDaysOfWeek = [...daysOfWeek, day].sort();
+        setDaysOfWeek(newDaysOfWeek);
+
+        // Nếu là RANDOM type, generate random time cho ngày mới
+        if (type === 'RANDOM') {
+          const newRandomTimes = {...randomTimes};
+          newRandomTimes[day] = generateRandomTimesForDays([day])[day];
+          setRandomTimes(newRandomTimes);
+        }
       }
     },
-    [daysOfWeek],
+    [daysOfWeek, type, randomTimes],
   );
 
   /**
@@ -108,8 +136,15 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
    * Khi nào dùng: Khi người dùng nhấn "Tất cả các ngày"
    */
   const selectAllDays = useCallback(() => {
-    setDaysOfWeek([0, 1, 2, 3, 4, 5, 6]);
-  }, []);
+    const allDays = [0, 1, 2, 3, 4, 5, 6];
+    setDaysOfWeek(allDays);
+
+    // Nếu là RANDOM type, generate random times cho tất cả các ngày
+    if (type === 'RANDOM') {
+      const newRandomTimes = generateRandomTimesForDays(allDays);
+      setRandomTimes(newRandomTimes);
+    }
+  }, [type]);
 
   /**
    * Mục đích: Quick time presets
@@ -137,7 +172,8 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
             type,
             timeHHmm,
             dateISO: type === 'ONE_TIME' ? finalDateISO : undefined,
-            daysOfWeek: type === 'REPEATING' ? daysOfWeek : undefined,
+            daysOfWeek: type === 'REPEATING' || type === 'RANDOM' ? daysOfWeek : undefined,
+            randomTimes: type === 'RANDOM' ? randomTimes : undefined,
           });
         } else {
           // Create new alarm
@@ -146,7 +182,8 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
             type,
             timeHHmm,
             dateISO: type === 'ONE_TIME' ? finalDateISO : undefined,
-            daysOfWeek: type === 'REPEATING' ? daysOfWeek : undefined,
+            daysOfWeek: type === 'REPEATING' || type === 'RANDOM' ? daysOfWeek : undefined,
+            randomTimes: type === 'RANDOM' ? randomTimes : undefined,
           });
         }
 
@@ -163,6 +200,7 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
       type,
       timeHHmm,
       daysOfWeek,
+      randomTimes,
       noteId,
       updateAlarm,
       createAlarm,
@@ -232,60 +270,84 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
             options={[
               {label: 'Một lần', value: 'ONE_TIME'},
               {label: 'Lặp lại', value: 'REPEATING'},
+              {label: 'Ngẫu nhiên', value: 'RANDOM'},
             ]}
             selectedValue={type}
             onChange={handleTypeChange}
           />
         </Animated.View>
 
-        {/* Quick time presets */}
-        <Animated.View entering={FadeInDown.delay(150).springify()} className="mb-6">
-          <AppText variant="body" weight="semibold" className="text-foreground mb-3">
-            Thời gian nhanh
-          </AppText>
-          <View className="flex-row flex-wrap gap-2">
-            <Chip
-              variant={timeHHmm === '06:00' ? 'primary' : 'outline'}
-              selected={timeHHmm === '06:00'}
-              onPress={() => setQuickTime('06:00')}
-              icon={<Icon name="Sunrise" className="w-4 h-4" />}>
-              Sáng sớm (6:00)
-            </Chip>
-            <Chip
-              variant={timeHHmm === '08:00' ? 'primary' : 'outline'}
-              selected={timeHHmm === '08:00'}
-              onPress={() => setQuickTime('08:00')}
-              icon={<Icon name="Coffee" className="w-4 h-4" />}>
-              Buổi sáng (8:00)
-            </Chip>
-            <Chip
-              variant={timeHHmm === '12:00' ? 'primary' : 'outline'}
-              selected={timeHHmm === '12:00'}
-              onPress={() => setQuickTime('12:00')}
-              icon={<Icon name="Sun" className="w-4 h-4" />}>
-              Trưa (12:00)
-            </Chip>
-            <Chip
-              variant={timeHHmm === '18:00' ? 'primary' : 'outline'}
-              selected={timeHHmm === '18:00'}
-              onPress={() => setQuickTime('18:00')}
-              icon={<Icon name="Sunset" className="w-4 h-4" />}>
-              Chiều (18:00)
-            </Chip>
-            <Chip
-              variant={timeHHmm === '21:00' ? 'primary' : 'outline'}
-              selected={timeHHmm === '21:00'}
-              onPress={() => setQuickTime('21:00')}
-              icon={<Icon name="Moon" className="w-4 h-4" />}>
-              Tối (21:00)
-            </Chip>
-          </View>
-        </Animated.View>
+        {/* Quick time presets - Ẩn khi RANDOM */}
+        {type !== 'RANDOM' && (
+          <Animated.View entering={FadeInDown.delay(150).springify()} className="mb-6">
+            <AppText variant="body" weight="semibold" className="text-foreground mb-3">
+              Thời gian nhanh
+            </AppText>
+            <View className="flex-row flex-wrap gap-2">
+              <Chip
+                variant={timeHHmm === '06:00' ? 'primary' : 'outline'}
+                selected={timeHHmm === '06:00'}
+                onPress={() => setQuickTime('06:00')}
+                icon={<Icon name="Sunrise" className="w-4 h-4" />}>
+                Sáng sớm (6:00)
+              </Chip>
+              <Chip
+                variant={timeHHmm === '08:00' ? 'primary' : 'outline'}
+                selected={timeHHmm === '08:00'}
+                onPress={() => setQuickTime('08:00')}
+                icon={<Icon name="Coffee" className="w-4 h-4" />}>
+                Buổi sáng (8:00)
+              </Chip>
+              <Chip
+                variant={timeHHmm === '12:00' ? 'primary' : 'outline'}
+                selected={timeHHmm === '12:00'}
+                onPress={() => setQuickTime('12:00')}
+                icon={<Icon name="Sun" className="w-4 h-4" />}>
+                Trưa (12:00)
+              </Chip>
+              <Chip
+                variant={timeHHmm === '18:00' ? 'primary' : 'outline'}
+                selected={timeHHmm === '18:00'}
+                onPress={() => setQuickTime('18:00')}
+                icon={<Icon name="Sunset" className="w-4 h-4" />}>
+                Chiều (18:00)
+              </Chip>
+              <Chip
+                variant={timeHHmm === '21:00' ? 'primary' : 'outline'}
+                selected={timeHHmm === '21:00'}
+                onPress={() => setQuickTime('21:00')}
+                icon={<Icon name="Moon" className="w-4 h-4" />}>
+                Tối (21:00)
+              </Chip>
+            </View>
+          </Animated.View>
+        )}
 
-        {/* Chọn giờ */}
-        <Animated.View entering={FadeInDown.delay(200).springify()}>
-          <TimePicker value={timeHHmm} onChange={setTimeHHmm} />
-        </Animated.View>
+        {/* Chọn giờ - Ẩn khi RANDOM */}
+        {type !== 'RANDOM' && (
+          <Animated.View entering={FadeInDown.delay(200).springify()}>
+            <TimePicker value={timeHHmm} onChange={setTimeHHmm} />
+          </Animated.View>
+        )}
+
+        {/* Explanation text cho RANDOM */}
+        {type === 'RANDOM' && (
+          <Animated.View entering={FadeInDown.delay(150).springify()} className="mb-6">
+            <View
+              style={{backgroundColor: colors.primary + '15', borderColor: colors.primary + '40'}}
+              className="p-4 rounded-xl border">
+              <View className="flex-row items-center gap-2 mb-2">
+                <Icon name="Shuffle" className="w-5 h-5 text-primary" />
+                <AppText variant="body" weight="semibold" className="text-primary">
+                  Chế độ ngẫu nhiên
+                </AppText>
+              </View>
+              <AppText variant="caption" className="text-foreground/70">
+                Báo thức sẽ reo vào giờ ngẫu nhiên từ 8:00 sáng đến 18:00 chiều. Mỗi ngày trong tuần sẽ có giờ khác nhau.
+              </AppText>
+            </View>
+          </Animated.View>
+        )}
 
         {/* Chọn ngày (ONE_TIME) */}
         {type === 'ONE_TIME' && (
@@ -294,11 +356,11 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
           </Animated.View>
         )}
 
-        {/* Chọn ngày trong tuần (REPEATING) */}
-        {type === 'REPEATING' && (
+        {/* Chọn ngày trong tuần (REPEATING hoặc RANDOM) */}
+        {(type === 'REPEATING' || type === 'RANDOM') && (
           <Animated.View entering={FadeInDown.delay(250).springify()} className="mb-6">
             <AppText variant="body" weight="semibold" className="text-foreground mb-3">
-              Lặp vào các ngày
+              {type === 'RANDOM' ? 'Chọn các ngày ngẫu nhiên' : 'Lặp vào các ngày'}
             </AppText>
 
             {/* Nút "Tất cả các ngày" */}
@@ -342,6 +404,7 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
             time={timeHHmm}
             date={dateISO}
             selectedDays={daysOfWeek}
+            randomTimes={randomTimes}
           />
         </Animated.View>
 

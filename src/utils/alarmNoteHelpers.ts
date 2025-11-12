@@ -42,6 +42,46 @@ export function isValidDaysOfWeek(days: number[]): boolean {
 }
 
 /**
+ * Mục đích: Generate random time trong khoảng 08:00 - 18:00, chia hết cho 5 phút
+ * Tham số vào: Không
+ * Tham số ra: string (HH:mm format)
+ * Khi nào dùng: Tạo random time cho RANDOM alarm type
+ */
+export function generateRandomTime(): string {
+  // Random giờ từ 8 đến 18 (8:00 AM - 6:00 PM)
+  const minHour = 8;
+  const maxHour = 18;
+
+  // Random phút chia hết cho 5 (0, 5, 10, ..., 55)
+  const minuteIntervals = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+
+  const hour = Math.floor(Math.random() * (maxHour - minHour + 1)) + minHour;
+  const minute = minuteIntervals[Math.floor(Math.random() * minuteIntervals.length)];
+
+  // Format HH:mm
+  const hourStr = hour.toString().padStart(2, '0');
+  const minuteStr = minute.toString().padStart(2, '0');
+
+  return `${hourStr}:${minuteStr}`;
+}
+
+/**
+ * Mục đích: Generate random times cho tất cả các ngày được chọn
+ * Tham số vào: daysOfWeek (number[])
+ * Tham số ra: Record<number, string> - {0: '09:30', 1: '14:15', ...}
+ * Khi nào dùng: Tạo random times cho RANDOM alarm type
+ */
+export function generateRandomTimesForDays(daysOfWeek: number[]): Record<number, string> {
+  const randomTimes: Record<number, string> = {};
+
+  for (const day of daysOfWeek) {
+    randomTimes[day] = generateRandomTime();
+  }
+
+  return randomTimes;
+}
+
+/**
  * Mục đích: Format timestamp thành string hiển thị
  * Tham số vào: timestamp (number)
  * Tham số ra: string

@@ -14,7 +14,7 @@ import {
   mapAlarmRowToModel,
   mapAlarmModelToRow,
 } from '@/types/alarmNote';
-import {generateId, isValidTimeHHmm, isValidDaysOfWeek} from '@/utils/alarmNoteHelpers';
+import {generateId, isValidTimeHHmm, isValidDaysOfWeek, generateRandomTimesForDays} from '@/utils/alarmNoteHelpers';
 import {useSettingsStore} from '@/stores/settingsStore';
 import {calculateNextFireAt} from '../services/alarmLogic';
 
@@ -40,6 +40,16 @@ export async function createAlarm(input: CreateAlarmInput): Promise<Alarm> {
     }
   }
 
+  if (input.type === 'RANDOM') {
+    if (!input.daysOfWeek || !isValidDaysOfWeek(input.daysOfWeek)) {
+      throw new Error('Báo thức RANDOM phải có daysOfWeek hợp lệ');
+    }
+    // Generate random times nếu chưa có
+    if (!input.randomTimes) {
+      input.randomTimes = generateRandomTimesForDays(input.daysOfWeek);
+    }
+  }
+
   const db = await getDatabase();
   const now = Date.now();
   const id = generateId();
@@ -61,6 +71,7 @@ export async function createAlarm(input: CreateAlarmInput): Promise<Alarm> {
     timeHHmm: input.timeHHmm,
     dateISO: input.dateISO,
     daysOfWeek: input.daysOfWeek,
+    randomTimes: input.randomTimes,
   }, timezone);
 
   console.log('[AlarmsRepo] 📊 RESULT:');
@@ -75,6 +86,7 @@ export async function createAlarm(input: CreateAlarmInput): Promise<Alarm> {
     timeHHmm: input.timeHHmm,
     dateISO: input.dateISO || null,
     daysOfWeek: input.daysOfWeek || null,
+    randomTimes: input.randomTimes || null,
     enabled: true,
     nextFireAt,
     createdAt: now,
@@ -84,9 +96,9 @@ export async function createAlarm(input: CreateAlarmInput): Promise<Alarm> {
   const row = mapAlarmModelToRow(alarm);
 
   await db.executeSql(
-    `INSERT INTO Alarms 
-     (id, noteId, type, timeHHmm, dateISO, daysOfWeek, enabled, nextFireAt, createdAt, updatedAt) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO Alarms
+     (id, noteId, type, timeHHmm, dateISO, daysOfWeek, randomTimes, enabled, nextFireAt, createdAt, updatedAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       row.id,
       row.noteId,
@@ -94,6 +106,7 @@ export async function createAlarm(input: CreateAlarmInput): Promise<Alarm> {
       row.timeHHmm,
       row.dateISO,
       row.daysOfWeek,
+      row.randomTimes,
       row.enabled,
       row.nextFireAt,
       row.createdAt,
@@ -190,6 +203,10 @@ export async function updateAlarm(
   if (input.daysOfWeek !== undefined) {
     updates.push('daysOfWeek = ?');
     values.push(JSON.stringify(input.daysOfWeek));
+  }
+  if (input.randomTimes !== undefined) {
+    updates.push('randomTimes = ?');
+    values.push(input.randomTimes ? JSON.stringify(input.randomTimes) : null);
   }
   if (input.enabled !== undefined) {
     updates.push('enabled = ?');
