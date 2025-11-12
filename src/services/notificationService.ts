@@ -1,43 +1,21 @@
 /**
- * Mục đích: Service wrapper cho iOS Notifications Native Module
+ * Mục đích: Service wrapper cho Notifee Notifications
  * Tham số vào: Alarm data
  * Tham số ra: Promise results
  * Khi nào dùng: Khi cần schedule/cancel notifications
  */
 
-import {NativeModules, NativeEventEmitter, Platform} from 'react-native';
+import notifee, {
+  TriggerType,
+  TimestampTrigger,
+  RepeatFrequency,
+  AndroidImportance,
+  AuthorizationStatus,
+} from '@notifee/react-native';
+import {Platform} from 'react-native';
 import type {Alarm} from '@/types/alarmNote';
 
-// Native Module (sẽ có khi compile trên iOS với Swift bridge)
-const AlarmNoteNotifications = NativeModules.AlarmNoteNotifications || {
-  // Mock implementation cho development khi chưa có native module
-  requestAuthorization: async () => {
-    console.log('[NotificationService] MOCK: requestAuthorization');
-    return true;
-  },
-  setCategories: async () => {
-    console.log('[NotificationService] MOCK: setCategories');
-  },
-  scheduleOneTime: async (payload: any) => {
-    console.log('[NotificationService] MOCK: scheduleOneTime', payload);
-  },
-  scheduleRepeatingWeekly: async (payload: any) => {
-    console.log('[NotificationService] MOCK: scheduleRepeatingWeekly', payload);
-  },
-  cancel: async (id: string) => {
-    console.log('[NotificationService] MOCK: cancel', id);
-  },
-  getPending: async () => {
-    console.log('[NotificationService] MOCK: getPending');
-    return [];
-  },
-};
-
-// Event Emitter cho notification events
-const eventEmitter =
-  Platform.OS === 'ios' && AlarmNoteNotifications
-    ? new NativeEventEmitter(AlarmNoteNotifications)
-    : null;
+console.log('[NotificationService] ✅ Notifee module đã được load');
 
 /**
  * Mục đích: Xin quyền notifications
@@ -47,7 +25,8 @@ const eventEmitter =
  */
 export async function requestNotificationPermission(): Promise<boolean> {
   try {
-    const granted = await AlarmNoteNotifications.requestAuthorization();
+    const settings = await notifee.requestPermission();
+    const granted = settings.authorizationStatus >= AuthorizationStatus.AUTHORIZED;
     console.log('[NotificationService] Quyền notifications:', granted);
     return granted;
   } catch (error) {
@@ -64,7 +43,36 @@ export async function requestNotificationPermission(): Promise<boolean> {
  */
 export async function setupNotificationCategories(): Promise<void> {
   try {
-    await AlarmNoteNotifications.setCategories();
+    // Tạo notification channel cho Android
+    if (Platform.OS === 'android') {
+      await notifee.createChannel({
+        id: 'alarm-note',
+        name: 'Alarm Notifications',
+        importance: AndroidImportance.HIGH,
+        sound: 'default',
+      });
+    }
+
+    // Tạo categories với actions (iOS + Android)
+    await notifee.setNotificationCategories([
+      {
+        id: 'ALARM_NOTE',
+        actions: [
+          {
+            id: 'snooze',
+            title: 'Snooze',
+            foreground: false,
+          },
+          {
+            id: 'dismiss',
+            title: 'Dismiss',
+            foreground: false,
+            destructive: true,
+          },
+        ],
+      },
+    ]);
+
     console.log('[NotificationService] Đã setup categories');
   } catch (error) {
     console.error('[NotificationService] Lỗi setup categories:', error);
@@ -83,14 +91,19 @@ export async function scheduleAlarmNotification(
   noteTitle: string,
 ): Promise<void> {
   try {
+    console.log('[NotificationService] 📅 Bắt đầu schedule alarm:', alarm.id);
+    console.log('[NotificationService] Alarm type:', alarm.type);
+    console.log('[NotificationService] Note title:', noteTitle);
+
     if (alarm.type === 'ONE_TIME') {
       await scheduleOneTimeAlarm(alarm, noteTitle);
     } else if (alarm.type === 'REPEATING') {
       await scheduleRepeatingAlarm(alarm, noteTitle);
     }
-    console.log('[NotificationService] Đã schedule alarm:', alarm.id);
+
+    console.log('[NotificationService] ✅ Đã schedule alarm thành công:', alarm.id);
   } catch (error) {
-    console.error('[NotificationService] Lỗi schedule alarm:', error);
+    console.error('[NotificationService] ❌ Lỗi schedule alarm:', error);
     throw error;
   }
 }
@@ -109,15 +122,48 @@ async function scheduleOneTimeAlarm(
     throw new Error('ONE_TIME alarm phải có nextFireAt');
   }
 
-  const payload = {
+  console.log('[NotificationService] 🔔 Schedule ONE_TIME:', {
     id: alarm.id,
     title: noteTitle,
-    body: `Báo thức lúc ${alarm.timeHHmm}`,
     timestamp: alarm.nextFireAt,
-    noteId: alarm.noteId,
+    timestampDate: new Date(alarm.nextFireAt).toISOString(),
+  });
+
+  // Tạo trigger timestamp
+  const trigger: TimestampTrigger = {
+    type: TriggerType.TIMESTAMP,
+    timestamp: alarm.nextFireAt,
   };
 
-  await AlarmNoteNotifications.scheduleOneTime(payload);
+  // Schedule notification
+  await notifee.createTriggerNotification(
+    {
+      id: alarm.id,
+      title: noteTitle,
+      body: `Báo thức lúc ${alarm.timeHHmm}`,
+      data: {
+        alarmId: alarm.id,
+        noteId: alarm.noteId,
+      },
+      ios: {
+        sound: 'default',
+        categoryId: 'ALARM_NOTE',
+        critical: true,
+        criticalVolume: 1.0,
+      },
+      android: {
+        channelId: 'alarm-note',
+        sound: 'default',
+        importance: AndroidImportance.HIGH,
+        pressAction: {
+          id: 'default',
+        },
+      },
+    },
+    trigger,
+  );
+
+  console.log('[NotificationService] ✅ scheduleOneTime completed');
 }
 
 /**
@@ -136,17 +182,67 @@ async function scheduleRepeatingAlarm(
 
   const [hour, minute] = alarm.timeHHmm.split(':').map(Number);
 
-  const payload = {
+  console.log('[NotificationService] 🔔 Schedule REPEATING:', {
     id: alarm.id,
     title: noteTitle,
-    body: `Báo thức lặp lúc ${alarm.timeHHmm}`,
     hour,
     minute,
     weekdays: alarm.daysOfWeek,
-    noteId: alarm.noteId,
-  };
+  });
 
-  await AlarmNoteNotifications.scheduleRepeatingWeekly(payload);
+  // Notifee không hỗ trợ weekly repeating trigger trực tiếp
+  // Workaround: Schedule cho mỗi ngày trong tuần
+  for (const weekday of alarm.daysOfWeek) {
+    // Tính timestamp cho lần đầu tiên alarm sẽ reo vào ngày này
+    const now = new Date();
+    const targetDate = new Date();
+    targetDate.setHours(hour, minute, 0, 0);
+
+    // Tìm ngày tiếp theo có weekday này
+    const currentWeekday = targetDate.getDay(); // 0 = Sunday, 1 = Monday, ...
+    let daysUntilTarget = weekday - currentWeekday;
+    if (daysUntilTarget < 0 || (daysUntilTarget === 0 && targetDate <= now)) {
+      daysUntilTarget += 7;
+    }
+    targetDate.setDate(targetDate.getDate() + daysUntilTarget);
+
+    const trigger: TimestampTrigger = {
+      type: TriggerType.TIMESTAMP,
+      timestamp: targetDate.getTime(),
+      repeatFrequency: RepeatFrequency.WEEKLY,
+    };
+
+    // Schedule notification cho ngày này
+    await notifee.createTriggerNotification(
+      {
+        id: `${alarm.id}-${weekday}`, // Unique ID cho mỗi ngày
+        title: noteTitle,
+        body: `Báo thức lặp lúc ${alarm.timeHHmm}`,
+        data: {
+          alarmId: alarm.id,
+          noteId: alarm.noteId,
+          weekday: weekday.toString(),
+        },
+        ios: {
+          sound: 'default',
+          categoryId: 'ALARM_NOTE',
+          critical: true,
+          criticalVolume: 1.0,
+        },
+        android: {
+          channelId: 'alarm-note',
+          sound: 'default',
+          importance: AndroidImportance.HIGH,
+          pressAction: {
+            id: 'default',
+          },
+        },
+      },
+      trigger,
+    );
+  }
+
+  console.log('[NotificationService] ✅ scheduleRepeatingAlarm completed');
 }
 
 /**
@@ -157,7 +253,15 @@ async function scheduleRepeatingAlarm(
  */
 export async function cancelAlarmNotification(alarmId: string): Promise<void> {
   try {
-    await AlarmNoteNotifications.cancel(alarmId);
+    // Cancel notification chính
+    await notifee.cancelNotification(alarmId);
+
+    // Cancel tất cả notifications của repeating alarm (nếu có)
+    // Format: alarmId-0, alarmId-1, ..., alarmId-6
+    for (let i = 0; i < 7; i++) {
+      await notifee.cancelNotification(`${alarmId}-${i}`);
+    }
+
     console.log('[NotificationService] Đã hủy alarm:', alarmId);
   } catch (error) {
     console.error('[NotificationService] Lỗi hủy alarm:', error);
@@ -173,7 +277,8 @@ export async function cancelAlarmNotification(alarmId: string): Promise<void> {
  */
 export async function getPendingNotifications(): Promise<string[]> {
   try {
-    const ids = await AlarmNoteNotifications.getPending();
+    const triggers = await notifee.getTriggerNotifications();
+    const ids = triggers.map(t => t.notification.id).filter((id): id is string => id !== undefined);
     console.log('[NotificationService] Pending notifications:', ids.length);
     return ids;
   } catch (error) {
@@ -183,39 +288,56 @@ export async function getPendingNotifications(): Promise<string[]> {
 }
 
 /**
- * Mục đích: Đăng ký listener cho notification actions
- * Tham số vào: callback (function)
- * Tham số ra: Subscription
- * Khi nào dùng: Khởi tạo app để lắng nghe SNOOZE/DISMISS
+ * Mục đích: Setup notification event handlers (foreground + background)
+ * Tham số vào: Không
+ * Tham số ra: Void
+ * Khi nào dùng: Khởi tạo app (trong App.tsx hoặc index.js)
  */
-export function addNotificationActionListener(
-  callback: (event: {action: string; alarmId: string; noteId: string}) => void,
-) {
-  if (!eventEmitter) {
-    console.log('[NotificationService] Event emitter không khả dụng (mock mode)');
-    return {remove: () => {}};
-  }
+export function setupNotificationHandlers() {
+  // Foreground event handler
+  notifee.onForegroundEvent(async ({type, detail}) => {
+    console.log('[NotificationService] Foreground event:', type, detail);
 
-  const subscription = eventEmitter.addListener('onAlarmAction', callback);
-  console.log('[NotificationService] Đã đăng ký action listener');
-  return subscription;
-}
+    const {notification, pressAction} = detail;
+    if (!notification?.data) return;
 
-/**
- * Mục đích: Đăng ký listener cho notification tap
- * Tham số vào: callback (function)
- * Tham số ra: Subscription
- * Khi nào dùng: Khởi tạo app để điều hướng khi tap notification
- */
-export function addNotificationTapListener(
-  callback: (event: {alarmId: string; noteId: string}) => void,
-) {
-  if (!eventEmitter) {
-    console.log('[NotificationService] Event emitter không khả dụng (mock mode)');
-    return {remove: () => {}};
-  }
+    const {alarmId, noteId} = notification.data as {
+      alarmId: string;
+      noteId: string;
+    };
 
-  const subscription = eventEmitter.addListener('onAlarmTapped', callback);
-  console.log('[NotificationService] Đã đăng ký tap listener');
-  return subscription;
+    // Handle action press (Snooze, Dismiss)
+    if (pressAction?.id) {
+      console.log('[NotificationService] Action pressed:', pressAction.id);
+      // TODO: Implement snooze/dismiss logic
+    }
+
+    // Handle notification tap
+    if (type === 1) {
+      // EventType.PRESS
+      console.log('[NotificationService] Notification tapped:', alarmId, noteId);
+      // TODO: Navigate to note
+    }
+  });
+
+  // Background event handler
+  notifee.onBackgroundEvent(async ({type, detail}) => {
+    console.log('[NotificationService] Background event:', type, detail);
+
+    const {notification, pressAction} = detail;
+    if (!notification?.data) return;
+
+    const {alarmId, noteId} = notification.data as {
+      alarmId: string;
+      noteId: string;
+    };
+
+    // Handle action press (Snooze, Dismiss)
+    if (pressAction?.id) {
+      console.log('[NotificationService] Background action pressed:', pressAction.id);
+      // TODO: Implement snooze/dismiss logic
+    }
+  });
+
+  console.log('[NotificationService] ✅ Notification handlers setup completed');
 }

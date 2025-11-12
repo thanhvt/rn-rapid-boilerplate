@@ -119,32 +119,87 @@ class AlarmNoteNotifications: RCTEventEmitter {
       reject("INVALID_PAYLOAD", "Missing required fields", nil)
       return
     }
-    
+
+    print("🔔 [Swift] scheduleOneTime called")
+    print("   ID: \(id)")
+    print("   Title: \(title)")
+    print("   Timestamp: \(timestamp)")
+
     let center = UNUserNotificationCenter.current()
-    
-    // Create content
-    let content = UNMutableNotificationContent()
-    content.title = title
-    content.body = body
-    content.sound = .default
-    content.categoryIdentifier = "ALARM_NOTE"
-    content.interruptionLevel = .timeSensitive
-    content.userInfo = ["alarmId": id, "noteId": noteId]
-    
-    // Create trigger
-    let date = Date(timeIntervalSince1970: timestamp / 1000.0)
-    let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
-    let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-    
-    // Create request
-    let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
-    
-    center.add(request) { error in
-      if let error = error {
-        reject("SCHEDULE_ERROR", "Lỗi schedule: \(error.localizedDescription)", error)
+
+    // Check permission trước
+    center.getNotificationSettings { settings in
+      print("🔔 [Swift] Notification settings:")
+      print("   Authorization status: \(settings.authorizationStatus.rawValue)")
+      print("   Alert setting: \(settings.alertSetting.rawValue)")
+
+      guard settings.authorizationStatus == .authorized else {
+        reject("NO_PERMISSION", "Notification permission not granted", nil)
         return
       }
-      resolve(nil)
+
+      // Create content
+      let content = UNMutableNotificationContent()
+      content.title = title
+      content.body = body
+      content.sound = .default
+      content.categoryIdentifier = "ALARM_NOTE"
+      content.interruptionLevel = .timeSensitive
+      content.userInfo = ["alarmId": id, "noteId": noteId]
+
+      // Create trigger
+      let date = Date(timeIntervalSince1970: timestamp / 1000.0)
+      let now = Date()
+
+      print("🔔 [Swift] ========================================")
+      print("🔔 [Swift] TIMESTAMP CALCULATION:")
+      print("🔔 [Swift]   - Input timestamp (ms): \(timestamp)")
+      print("🔔 [Swift]   - Input timestamp (s): \(timestamp / 1000.0)")
+      print("🔔 [Swift]   - Now: \(now)")
+      print("🔔 [Swift]   - Fire date: \(date)")
+      print("🔔 [Swift]   - Fire date formatted: \(DateFormatter.localizedString(from: date, dateStyle: .medium, timeStyle: .medium))")
+      print("🔔 [Swift]   - Time interval from now: \(date.timeIntervalSince(now)) seconds")
+
+      if date <= now {
+        print("🔔 [Swift] ⚠️ WARNING: Fire date is in the PAST!")
+      }
+
+      let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+      print("🔔 [Swift] Date components:")
+      print("🔔 [Swift]   - year: \(components.year ?? 0)")
+      print("🔔 [Swift]   - month: \(components.month ?? 0)")
+      print("🔔 [Swift]   - day: \(components.day ?? 0)")
+      print("🔔 [Swift]   - hour: \(components.hour ?? 0)")
+      print("🔔 [Swift]   - minute: \(components.minute ?? 0)")
+      print("🔔 [Swift]   - second: \(components.second ?? 0)")
+      print("🔔 [Swift] ========================================")
+
+      let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+
+      // Create request
+      let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+
+      print("🔔 [Swift] Adding notification request...")
+
+      center.add(request) { error in
+        if let error = error {
+          print("❌ [Swift] Error adding notification: \(error.localizedDescription)")
+          reject("SCHEDULE_ERROR", "Lỗi schedule: \(error.localizedDescription)", error)
+          return
+        }
+
+        print("✅ [Swift] Notification added successfully!")
+
+        // Verify bằng cách check pending
+        center.getPendingNotificationRequests { requests in
+          print("📋 [Swift] Total pending notifications: \(requests.count)")
+          for req in requests {
+            print("   - \(req.identifier): \(req.content.title)")
+          }
+        }
+
+        resolve(nil)
+      }
     }
   }
   

@@ -15,7 +15,8 @@ import {
   mapAlarmModelToRow,
 } from '@/types/alarmNote';
 import {generateId, isValidTimeHHmm, isValidDaysOfWeek} from '@/utils/alarmNoteHelpers';
-import {calculateNextFireAt} from '@/services/alarmLogic';
+import {useSettingsStore} from '@/stores/settingsStore';
+import {calculateNextFireAt} from '../services/alarmLogic';
 
 /**
  * Mục đích: Tạo báo thức mới
@@ -43,13 +44,29 @@ export async function createAlarm(input: CreateAlarmInput): Promise<Alarm> {
   const now = Date.now();
   const id = generateId();
 
-  // Tính nextFireAt
+  // Lấy timezone từ settings
+  const timezone = useSettingsStore.getState().timezone;
+  console.log('[AlarmsRepo] 🔍 ========================================');
+  console.log('[AlarmsRepo] 🔍 INPUT DATA:');
+  console.log('[AlarmsRepo]   - type:', input.type);
+  console.log('[AlarmsRepo]   - timeHHmm:', input.timeHHmm);
+  console.log('[AlarmsRepo]   - dateISO:', input.dateISO);
+  console.log('[AlarmsRepo]   - daysOfWeek:', input.daysOfWeek);
+  console.log('[AlarmsRepo]   - timezone:', timezone);
+  console.log('[AlarmsRepo] 🔍 ========================================');
+
+  // Tính nextFireAt với timezone
   const nextFireAt = calculateNextFireAt({
     type: input.type,
     timeHHmm: input.timeHHmm,
     dateISO: input.dateISO,
     daysOfWeek: input.daysOfWeek,
-  });
+  }, timezone);
+
+  console.log('[AlarmsRepo] 📊 RESULT:');
+  console.log('[AlarmsRepo]   - nextFireAt timestamp:', nextFireAt);
+  console.log('[AlarmsRepo]   - nextFireAt ISO:', nextFireAt ? new Date(nextFireAt).toISOString() : null);
+  console.log('[AlarmsRepo]   - nextFireAt VN:', nextFireAt ? new Date(nextFireAt).toLocaleString('vi-VN', {timeZone: timezone}) : null);
 
   const alarm: Alarm = {
     id,

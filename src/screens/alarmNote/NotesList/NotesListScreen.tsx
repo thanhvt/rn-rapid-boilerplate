@@ -24,7 +24,7 @@ import {useAlarmsStore} from '@/stores/alarmsStore';
 import type {Note} from '@/types/alarmNote';
 import {formatTimestamp} from '@/utils/alarmNoteHelpers';
 import type {MainTabParamList, RootStackParamList} from '@/navigation/types';
-
+import { checkPendingNotifications, testScheduleSimpleNotification } from '@/utils/testNotifications';
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'NOTES'>,
   NativeStackScreenProps<RootStackParamList>
@@ -43,6 +43,7 @@ export function NotesListScreen({navigation}: Props): React.JSX.Element {
   // Load notes khi mount
   useEffect(() => {
     loadNotes();
+    // testScheduleSimpleNotification();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

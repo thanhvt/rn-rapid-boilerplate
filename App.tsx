@@ -19,11 +19,15 @@ import '@/config/i18n.ts'
 import {DialogProvider} from "@/components/ui/DialogProvider.tsx";
 import {ToastProvider} from "@/components/ui/ToastProvider.tsx";
 import {AlarmNoteInitializer} from "@/components/helpers/AlarmNoteInitializer.tsx";
+import {useNotificationPermission} from "@/hooks/useNotificationPermission";
 
 
 const AppContent: React.FC = () => {
   const {theme} = useAppSelector(state => state.app);
   const colors = useColors();
+
+  // Request notification permission khi app khởi động
+  useNotificationPermission();
 
   return (
     <GestureHandlerRootView>

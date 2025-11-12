@@ -10,7 +10,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import {Alarm, AlarmType} from '@/types/alarmNote';
+import type {Alarm, AlarmType} from '@/types/alarmNote';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -29,28 +29,43 @@ export function calculateNextFireAtOneTime(
   tz: string = 'Asia/Ho_Chi_Minh',
 ): number | null {
   try {
+    console.log('[AlarmLogic] 🔍 calculateNextFireAtOneTime INPUT:');
+    console.log('[AlarmLogic]   - dateISO:', dateISO);
+    console.log('[AlarmLogic]   - timeHHmm:', timeHHmm);
+    console.log('[AlarmLogic]   - timezone:', tz);
+
     const [hour, minute] = timeHHmm.split(':').map(Number);
-    
-    // Tạo datetime từ dateISO + timeHHmm
-    const targetDate = dayjs.tz(dateISO, tz)
+    console.log('[AlarmLogic]   - Parsed hour:', hour, ', minute:', minute);
+
+    // FIX: Parse local time (device timezone), KHÔNG dùng dayjs.tz()
+    // Vì dayjs.tz() có bug với historical timezone data
+    const targetDate = dayjs(dateISO)
       .hour(hour)
       .minute(minute)
       .second(0)
       .millisecond(0);
 
-    const now = dayjs.tz(undefined, tz);
+    const now = dayjs();
+
+    console.log('[AlarmLogic] 🕐 THỜI GIAN:');
+    console.log('[AlarmLogic]   - Bây giờ:', now.format('YYYY-MM-DD HH:mm:ss'));
+    console.log('[AlarmLogic]   - Bây giờ timezone:', now.format('Z'));
+    console.log('[AlarmLogic]   - Target:', targetDate.format('YYYY-MM-DD HH:mm:ss'));
+    console.log('[AlarmLogic]   - Target timezone:', targetDate.format('Z'));
+    console.log('[AlarmLogic]   - Target ISO:', targetDate.toISOString());
+    console.log('[AlarmLogic]   - Target timestamp:', targetDate.valueOf());
 
     // Nếu thời gian đã qua, trả về null (hoặc có thể suggest ngày mai)
     if (targetDate.isSameOrBefore(now)) {
-      console.log('[AlarmLogic] ONE_TIME đã qua, không schedule:', targetDate.format());
+      console.log('[AlarmLogic] ⚠️ ONE_TIME đã qua, không schedule!');
       return null;
     }
 
     const timestamp = targetDate.valueOf();
-    console.log('[AlarmLogic] ONE_TIME nextFireAt:', targetDate.format(), '- Timestamp:', timestamp);
+    console.log('[AlarmLogic] ✅ ONE_TIME nextFireAt:', targetDate.format(), '- Timestamp:', timestamp);
     return timestamp;
   } catch (error) {
-    console.error('[AlarmLogic] Lỗi tính ONE_TIME nextFireAt:', error);
+    console.error('[AlarmLogic] ❌ Lỗi tính ONE_TIME nextFireAt:', error);
     return null;
   }
 }
@@ -67,14 +82,15 @@ export function suggestNextDayForOneTime(
   tz: string = 'Asia/Ho_Chi_Minh',
 ): string {
   const [hour, minute] = timeHHmm.split(':').map(Number);
-  
-  const targetDate = dayjs.tz(dateISO, tz)
+
+  // FIX: Parse local time, KHÔNG dùng dayjs.tz()
+  const targetDate = dayjs(dateISO)
     .hour(hour)
     .minute(minute)
     .second(0)
     .millisecond(0);
 
-  const now = dayjs.tz(undefined, tz);
+  const now = dayjs();
 
   if (targetDate.isSameOrBefore(now)) {
     // Suggest ngày mai cùng giờ
@@ -110,7 +126,7 @@ export function calculateNextFireAtRepeating(
     }
 
     const [hour, minute] = timeHHmm.split(':').map(Number);
-    const now = dayjs.tz(undefined, tz);
+    const now = dayjs();
 
     // Tìm lần nổ kế tiếp trong 7 ngày tới
     for (let i = 0; i < 7; i++) {

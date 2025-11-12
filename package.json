@@ -12,6 +12,7 @@
     "@gluestack-style/react": "^1.0.57",
     "@gluestack-ui/themed": "^1.1.73",
     "@gorhom/bottom-sheet": "^5.2.6",
+    "@notifee/react-native": "^9.1.8",
     "@react-native-community/datetimepicker": "^8.5.0",
     "@react-navigation/bottom-tabs": "^7.4.7",
     "@react-navigation/native": "^7.1.17",

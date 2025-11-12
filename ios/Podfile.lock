@@ -2330,6 +2330,11 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
+  - RNNotifee (9.1.8):
+    - React-Core
+    - RNNotifee/NotifeeCore (= 9.1.8)
+  - RNNotifee/NotifeeCore (9.1.8):
+    - React-Core
   - RNPermissions (5.4.4):
     - boost
     - DoubleConversion
@@ -2742,6 +2747,7 @@ DEPENDENCIES:
   - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNLocalize (from `../node_modules/react-native-localize`)
+  - "RNNotifee (from `../node_modules/@notifee/react-native`)"
   - RNPermissions (from `../node_modules/react-native-permissions`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
@@ -2910,6 +2916,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-gesture-handler"
   RNLocalize:
     :path: "../node_modules/react-native-localize"
+  RNNotifee:
+    :path: "../node_modules/@notifee/react-native"
   RNPermissions:
     :path: "../node_modules/react-native-permissions"
   RNReanimated:
@@ -3001,13 +3009,14 @@ SPEC CHECKSUMS:
   RNDateTimePicker: 9f94ee616c300a79e18f2c4b4e3cd839d091c5af
   RNGestureHandler: cdca641e24d0ab743dcd90a24de4e6259e6aa0de
   RNLocalize: 99cfa0ece4586b0e249592836c598ecaf9a1e8bc
+  RNNotifee: 4a6ee5c7deaf00e005050052d73ee6315dff7ec9
   RNPermissions: 5fc7a01f131b005aa7f5149565fc9ac99a82079b
   RNReanimated: 40d10340670a59de2928ea2ff567083bcd370ae3
   RNScreens: be724c511fc1ed615804ac814f956ec723c7e4cb
   RNSVG: 70d577ac284cff74cb37b58da5f1690b0eeed271
   RNWorklets: 747cb8457fd3dc0665d5665cef88d5faba1911cb
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
-  Yoga: 703055a9f39562521cdb8657162dfd80f8c174c3
+  Yoga: daa1e4de4b971b977b23bc842aaa3e135324f1f3
 
 PODFILE CHECKSUM: b2f8eedfa6ab2c55ef32afc32dace0b5f20eca52
 
