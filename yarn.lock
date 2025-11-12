@@ -4988,6 +4988,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-native-sqlite-storage@npm:^6.0.5":
+  version: 6.0.5
+  resolution: "@types/react-native-sqlite-storage@npm:6.0.5"
+  checksum: 192d4c3e2d93ea59f59387b8eb8d0aca3da32acca441aa5f84b2f4d919fc52aaa088ab5eb319ceec8471e58107d7463c56c733bfe5ff58915ac03b45313b6450
+  languageName: node
+  linkType: hard
+
 "@types/react-native@npm:^0.73.0":
   version: 0.73.0
   resolution: "@types/react-native@npm:0.73.0"
@@ -10657,6 +10664,7 @@ __metadata:
     "@types/node": ^24.0.4
     "@types/react": ^19.1.0
     "@types/react-native": ^0.73.0
+    "@types/react-native-sqlite-storage": ^6.0.5
     "@types/react-test-renderer": ^19.1.0
     "@types/typescript": ^2.0.0
     babel-plugin-module-resolver: ^5.0.2
