@@ -7,12 +7,10 @@
 
 import React, {useEffect, useMemo, useCallback, useState} from 'react';
 import {View, FlatList, Pressable} from 'react-native';
-import Animated, {FadeInDown, FadeInUp, FadeIn} from 'react-native-reanimated';
+import Animated, {FadeInDown, FadeInUp} from 'react-native-reanimated';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useAlarmsStore} from '@/stores/alarmsStore';
 import {useNotesStore} from '@/stores/notesStore';
-import {getDayName} from '@/utils/alarmNoteHelpers';
-import dayjs from 'dayjs';
 import type {RootStackParamList} from '@/navigation/types';
 import {AppText, AppButton, Icon, Badge} from '@/components/ui';
 import {useColors} from '@/hooks/useColors';
@@ -187,16 +185,22 @@ export function AlarmManagerScreen({
         {/* Stats */}
         <View className="flex-row items-center gap-2">
           <Badge variant="primary" size="sm">
-            {alarms.length} báo thức
+            <AppText variant="caption" className="text-white">
+              {alarms.length} báo thức
+            </AppText>
           </Badge>
           {enabledCount > 0 && (
             <Badge variant="success" size="sm">
-              {enabledCount} đang bật
+              <AppText variant="caption" className="text-success">
+                {enabledCount} đang bật
+              </AppText>
             </Badge>
           )}
           {disabledCount > 0 && (
             <Badge variant="default" size="sm">
-              {disabledCount} đã tắt
+              <AppText variant="caption" className="text-neutrals100">
+                {disabledCount} đã tắt
+              </AppText>
             </Badge>
           )}
         </View>

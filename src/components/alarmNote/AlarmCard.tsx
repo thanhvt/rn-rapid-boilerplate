@@ -134,7 +134,7 @@ export function AlarmCard({
             </AppText>
 
             {/* Hiển thị type và days */}
-            <View className="flex-row items-center gap-2 mt-1">
+            <View className="flex-row items-center gap-2 mt-1 flex-wrap">
               <Badge
                 variant={alarm.type === 'REPEATING' ? 'primary' : 'secondary'}
                 size="sm">
@@ -144,7 +144,7 @@ export function AlarmCard({
               </Badge>
 
               {alarm.type === 'REPEATING' && alarm.daysOfWeek && alarm.daysOfWeek.length > 0 && (
-                <AppText variant="caption" className="text-neutrals400" raw>
+                <AppText variant="caption" className="text-neutrals400">
                   {alarm.daysOfWeek.map(d => getDayName(d)).join(', ')}
                 </AppText>
               )}

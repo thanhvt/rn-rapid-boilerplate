@@ -167,7 +167,7 @@ async function checkAndRescheduleIfNeeded(): Promise<void> {
 
     // Check xem có alarms nào đã fire mà chưa reschedule không
     const now = Date.now();
-    const alarmsNeedReschedule = alarms.filter(alarm => {
+    const alarmsNeedAction = alarms.filter(alarm => {
       // Nếu nextFireAt đã qua (alarm đã fire)
       if (alarm.nextFireAt && alarm.nextFireAt < now) {
         return true;
@@ -175,11 +175,31 @@ async function checkAndRescheduleIfNeeded(): Promise<void> {
       return false;
     });
 
-    if (alarmsNeedReschedule.length > 0) {
+    if (alarmsNeedAction.length > 0) {
       console.log(
-        `[BackgroundRefresh] ⚠️ Tìm thấy ${alarmsNeedReschedule.length} alarms cần reschedule`,
+        `[BackgroundRefresh] ⚠️ Tìm thấy ${alarmsNeedAction.length} alarms đã qua`,
       );
-      await rescheduleAllAlarms();
+
+      // Xử lý từng alarm
+      const alarmsStore = useAlarmsStore.getState();
+      for (const alarm of alarmsNeedAction) {
+        if (alarm.type === 'ONE_TIME') {
+          // ONE_TIME alarm đã qua → disable nó
+          console.log(`[BackgroundRefresh] 🔕 Disable ONE_TIME alarm đã qua: ${alarm.id}`);
+          await alarmsStore.toggleAlarmEnabled(alarm.id, false);
+          await cancelAlarmNotification(alarm.id);
+        } else if (alarm.type === 'REPEATING') {
+          // REPEATING alarm → reschedule (sẽ tính lần kêu tiếp theo)
+          console.log(`[BackgroundRefresh] 🔄 Reschedule REPEATING alarm: ${alarm.id}`);
+          // Reschedule sẽ được xử lý bởi rescheduleAllAlarms
+        }
+      }
+
+      // Reschedule các REPEATING alarms
+      const repeatingAlarms = alarmsNeedAction.filter(a => a.type === 'REPEATING');
+      if (repeatingAlarms.length > 0) {
+        await rescheduleAllAlarms();
+      }
     } else {
       console.log('[BackgroundRefresh] ✅ Tất cả alarms đều OK');
     }

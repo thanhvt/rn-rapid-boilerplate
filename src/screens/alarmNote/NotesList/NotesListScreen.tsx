@@ -26,6 +26,7 @@ import {useColors} from '@/hooks/useColors';
 import {useToast} from '@/components/ui/ToastProvider';
 import {useDialog} from '@/components/ui/DialogProvider';
 import {NoteCard, EmptyState, SkeletonLoader} from '@/components/alarmNote';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'NOTES'>,
@@ -40,6 +41,7 @@ export function NotesListScreen({navigation}: Props): React.JSX.Element {
   const colors = useColors();
   const {showSuccess, showError} = useToast();
   const {showConfirm} = useDialog();
+  const insets = useSafeAreaInsets();
 
   const {notes, loading, loadNotes, searchNotes, deleteNote} = useNotesStore();
   const alarms = useAlarmsStore(state => state.alarms);
@@ -229,8 +231,9 @@ export function NotesListScreen({navigation}: Props): React.JSX.Element {
         style={{
           backgroundColor: colors.neutrals1000,
           borderBottomColor: colors.neutrals800,
+          paddingTop: insets.top + 16,
         }}
-        className="px-4 pt-12 pb-4 shadow-sm border-b">
+        className="px-4 pb-4 shadow-sm border-b">
         <AppText variant="heading2" weight="bold" className="text-foreground mb-4">
           Ghi chú của tôi
         </AppText>

@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {View, Pressable, LayoutChangeEvent} from 'react-native';
+import {Pressable, LayoutChangeEvent} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,

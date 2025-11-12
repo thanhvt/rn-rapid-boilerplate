@@ -75,20 +75,25 @@ export function AlarmPreview({
         backgroundColor: colors.primary + '15',
         borderColor: colors.primary + '40',
       }}
-      className="mx-4 p-4 rounded-xl border mb-4">
+      className="mx-4 p-5 rounded-2xl border-2 mb-6 shadow-sm">
       {/* Header */}
       <Animated.View
         entering={FadeInDown.delay(100).springify()}
-        className="flex-row items-center gap-2 mb-3">
-        <Icon name="Info" className="w-5 h-5 text-primary" />
-        <AppText variant="body" weight="semibold" className="text-primary" raw>
-          Xem trước
+        className="flex-row items-center gap-3 mb-4 pb-3 border-b"
+        style={{borderBottomColor: colors.primary + '30'}}>
+        <View
+          className="w-10 h-10 rounded-full items-center justify-center"
+          style={{backgroundColor: colors.primary + '20'}}>
+          <Icon name="Bell" className="w-5 h-5 text-primary" />
+        </View>
+        <AppText variant="heading5" weight="bold" className="text-primary">
+          Xem trước báo thức
         </AppText>
       </Animated.View>
 
       {/* Preview content */}
-      <Animated.View entering={FadeInDown.delay(200).springify()}>
-        <AppText variant="body" className="text-foreground mb-3">
+      <Animated.View entering={FadeInDown.delay(200).springify()} className="mb-4">
+        <AppText variant="body" className="text-foreground leading-6">
           {getPreviewMessage()}
         </AppText>
       </Animated.View>
@@ -97,20 +102,20 @@ export function AlarmPreview({
       <Animated.View
         entering={FadeInDown.delay(300).springify()}
         className="flex-row flex-wrap gap-2">
-        <Badge variant="primary" size="sm">
-          <View className="flex-row items-center gap-1">
-            <Icon name="Clock" className="w-3 h-3 text-white" />
-            <AppText variant="caption" className="text-white" raw>
+        <Badge variant="primary" size="md">
+          <View className="flex-row items-center gap-1.5">
+            <Icon name="Clock" className="w-4 h-4 text-white" />
+            <AppText variant="body" weight="semibold" className="text-white">
               {time}
             </AppText>
           </View>
         </Badge>
 
         {type === 'ONE_TIME' && date && (
-          <Badge variant="secondary" size="sm">
-            <View className="flex-row items-center gap-1">
-              <Icon name="Calendar" className="w-3 h-3 text-white" />
-              <AppText variant="caption" className="text-white" raw>
+          <Badge variant="secondary" size="md">
+            <View className="flex-row items-center gap-1.5">
+              <Icon name="Calendar" className="w-4 h-4 text-white" />
+              <AppText variant="body" weight="semibold" className="text-white">
                 {dayjs(date).format('DD/MM/YYYY')}
               </AppText>
             </View>
@@ -118,10 +123,10 @@ export function AlarmPreview({
         )}
 
         {type === 'REPEATING' && selectedDays.length > 0 && (
-          <Badge variant="success" size="sm">
-            <View className="flex-row items-center gap-1">
-              <Icon name="Repeat" className="w-3 h-3 text-white" />
-              <AppText variant="caption" className="text-white" raw>
+          <Badge variant="success" size="md">
+            <View className="flex-row items-center gap-1.5">
+              <Icon name="Repeat" className="w-4 h-4 text-white" />
+              <AppText variant="body" weight="semibold" className="text-white">
                 {selectedDays.length === 7
                   ? 'Hàng ngày'
                   : `${selectedDays.length} ngày`}

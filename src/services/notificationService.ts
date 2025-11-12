@@ -122,6 +122,19 @@ async function scheduleOneTimeAlarm(
     throw new Error('ONE_TIME alarm phải có nextFireAt');
   }
 
+  // Kiểm tra nếu nextFireAt đã qua (trong quá khứ)
+  const now = Date.now();
+  if (alarm.nextFireAt <= now) {
+    console.warn('[NotificationService] ⚠️ nextFireAt đã qua, bỏ qua schedule:', {
+      nextFireAt: alarm.nextFireAt,
+      nextFireAtDate: new Date(alarm.nextFireAt).toISOString(),
+      now: now,
+      nowDate: new Date(now).toISOString(),
+    });
+    // Không throw error, chỉ skip schedule
+    return;
+  }
+
   console.log('[NotificationService] 🔔 Schedule ONE_TIME:', {
     id: alarm.id,
     title: noteTitle,
@@ -192,9 +205,10 @@ async function scheduleRepeatingAlarm(
 
   // Notifee không hỗ trợ weekly repeating trigger trực tiếp
   // Workaround: Schedule cho mỗi ngày trong tuần
+  const now = new Date();
+
   for (const weekday of alarm.daysOfWeek) {
     // Tính timestamp cho lần đầu tiên alarm sẽ reo vào ngày này
-    const now = new Date();
     const targetDate = new Date();
     targetDate.setHours(hour, minute, 0, 0);
 
@@ -205,6 +219,18 @@ async function scheduleRepeatingAlarm(
       daysUntilTarget += 7;
     }
     targetDate.setDate(targetDate.getDate() + daysUntilTarget);
+
+    // Kiểm tra nếu targetDate vẫn trong quá khứ (edge case)
+    if (targetDate.getTime() <= now.getTime()) {
+      console.warn('[NotificationService] ⚠️ targetDate trong quá khứ, skip weekday:', weekday);
+      continue;
+    }
+
+    console.log('[NotificationService] 📅 Schedule cho weekday:', {
+      weekday,
+      targetDate: targetDate.toISOString(),
+      timestamp: targetDate.getTime(),
+    });
 
     const trigger: TimestampTrigger = {
       type: TriggerType.TIMESTAMP,

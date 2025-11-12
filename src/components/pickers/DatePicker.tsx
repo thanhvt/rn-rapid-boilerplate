@@ -44,7 +44,7 @@ export function DatePicker({
    * Khi nào dùng: Callback từ DateTimePicker
    */
   const handleChange = useCallback(
-    (event: any, selectedDate?: Date) => {
+    (_event: any, selectedDate?: Date) => {
       setShowPicker(Platform.OS === 'ios'); // iOS giữ picker mở, Android đóng
 
       if (selectedDate) {
