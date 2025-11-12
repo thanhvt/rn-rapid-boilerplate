@@ -6,7 +6,7 @@
  */
 
 import React, {useEffect, useState, useCallback, useRef} from 'react';
-import {View, ScrollView, KeyboardAvoidingView, Platform} from 'react-native';
+import {View, ScrollView, KeyboardAvoidingView, Platform, TextInput} from 'react-native';
 import Animated, {FadeInDown, FadeIn} from 'react-native-reanimated';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useNotesStore} from '@/stores/notesStore';
@@ -41,6 +41,7 @@ export function NoteEditorScreen({
 
   const originalTitle = useRef('');
   const originalContent = useRef('');
+  const contentInputRef = useRef<TextInput>(null);
 
   const isEditMode = !!noteId;
 
@@ -276,6 +277,11 @@ export function NoteEditorScreen({
               autoFocus={!isEditMode}
               errorText={titleError}
               leftIcon={<Icon name="FileText" className="w-5 h-5 text-neutrals400" />}
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                // Focus vào content input khi nhấn Enter/Done
+                contentInputRef.current?.focus();
+              }}
             />
           </Animated.View>
 
@@ -308,6 +314,7 @@ export function NoteEditorScreen({
                 borderColor: content ? colors.primary + '40' : colors.neutrals800,
               }}>
               <AppInput
+                ref={contentInputRef}
                 placeholder="Viết nội dung chi tiết cho ghi chú của bạn...&#10;&#10;Bạn có thể viết nhiều dòng, thêm chi tiết, hoặc ghi chú quan trọng ở đây."
                 value={content}
                 onChangeText={setContent}

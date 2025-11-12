@@ -17,7 +17,6 @@ import Animated, {
 import {AppText, Badge, Icon} from '@/components/ui';
 import {useColors} from '@/hooks/useColors';
 import type {Note} from '@/types/alarmNote';
-import {formatTimestamp} from '@/utils/alarmNoteHelpers';
 
 interface NoteCardProps {
   note: Note;
@@ -91,71 +90,62 @@ export function NoteCard({
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}>
-      {/* Header với title và alarm badge */}
+      {/* Header với title, alarm badge, và action buttons */}
       <View className="flex-row justify-between items-start mb-2">
-        <AppText
-          variant="body"
-          weight="semibold"
-          className="flex-1 text-foreground"
-          numberOfLines={2}>
-          {note.title}
-        </AppText>
-
-        {enabledAlarmsCount > 0 && (
-          <Animated.View
-            entering={FadeInDown.springify()}
-            className="ml-2">
-            <Badge variant="primary" size="sm">
-              <View className="flex-row items-center gap-1">
-                <Icon name="Bell" className="w-3 h-3 text-white" />
-                <AppText variant="caption" className="text-white" raw>
-                  {enabledAlarmsCount}
-                </AppText>
-              </View>
-            </Badge>
-          </Animated.View>
-        )}
-      </View>
-
-      {/* Content preview */}
-      {note.content && (
-        <AppText
-          variant="bodySmall"
-          className="text-neutrals300 mb-3"
-          numberOfLines={2}>
-          {note.content}
-        </AppText>
-      )}
-
-      {/* Footer với timestamp và actions */}
-      <View className="flex-row justify-between items-center pt-3 border-t border-neutrals800">
-        {/* <View className="flex-row items-center gap-1.5">
-          <Icon name="Clock" className="w-3.5 h-3.5 text-neutrals400" />
-          <AppText variant="caption" className="text-neutrals400" raw>
-            {formatTimestamp(note.updatedAt)}
+        <View className="flex-1 flex-row items-start gap-2">
+          <AppText
+            variant="body"
+            weight="semibold"
+            className="flex-1 text-foreground"
+            numberOfLines={2}>
+            {note.title}
           </AppText>
-        </View> */}
 
-        <View className="flex-row gap-2">
+          {/* {enabledAlarmsCount > 0 && (
+            <Animated.View entering={FadeInDown.springify()}>
+              <Badge variant="primary" size="sm">
+                <View className="flex-row items-center gap-1">
+                  <Icon name="Bell" className="w-3 h-3 text-white" />
+                  <AppText variant="caption" className="text-white" raw>
+                    {enabledAlarmsCount}
+                  </AppText>
+                </View>
+              </Badge>
+            </Animated.View>
+          )} */}
+        </View>
+
+        {/* Action buttons - Cùng dòng với title */}
+        <View className="flex-row gap-2 ml-2">
           {/* Nút Báo thức - Icon only, tối giản */}
           <Pressable
             onPress={handleAlarmPress}
             style={{backgroundColor: colors.primary + '15'}}
-            className="w-9 h-9 rounded-full items-center justify-center active:opacity-70"
+            className="w-8 h-8 rounded-full items-center justify-center active:opacity-70"
             hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-            <Icon name="Bell" className="w-4.5 h-4.5 text-primary" />
+            <Icon name="Bell" className="w-4 h-4 text-primary" />
           </Pressable>
 
           {/* Nút Xóa - Icon only, tối giản */}
           <Pressable
             onPress={handleDeletePress}
             style={{backgroundColor: colors.error + '15'}}
-            className="w-9 h-9 rounded-full items-center justify-center active:opacity-70"
+            className="w-8 h-8 rounded-full items-center justify-center active:opacity-70"
             hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-            <Icon name="Trash2" className="w-4.5 h-4.5 text-error" />
+            <Icon name="Trash2" className="w-4 h-4 text-error" />
           </Pressable>
         </View>
       </View>
+
+      {/* Content preview */}
+      {note.content && (
+        <AppText
+          variant="bodySmall"
+          className="text-neutrals300"
+          numberOfLines={2}>
+          {note.content}
+        </AppText>
+      )}
     </AnimatedPressable>
   );
 }

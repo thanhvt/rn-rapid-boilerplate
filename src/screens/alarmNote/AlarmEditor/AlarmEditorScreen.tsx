@@ -48,7 +48,9 @@ export function AlarmEditorScreen({route, navigation}: Props): React.JSX.Element
 
   // Form state
   const [type, setType] = useState<AlarmType>(alarm?.type || 'ONE_TIME');
-  const [timeHHmm, setTimeHHmm] = useState(alarm?.timeHHmm || '08:00');
+  const [timeHHmm, setTimeHHmm] = useState(
+    alarm?.timeHHmm || dayjs().format('HH:mm'), // Mặc định là giờ hiện tại
+  );
   const [dateISO, setDateISO] = useState(
     alarm?.dateISO || dayjs().format('YYYY-MM-DD'),
   );
