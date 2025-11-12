@@ -281,25 +281,62 @@ export function NoteEditorScreen({
 
           {/* Content input */}
           <Animated.View entering={FadeInDown.delay(200).springify()} className="mb-4">
-            <View className="flex-row items-center justify-between mb-2">
-              <AppText variant="body" weight="semibold" className="text-foreground">
-                Nội dung
-              </AppText>
-              <AppText variant="caption" className="text-neutrals400" raw>
-                {contentLength} ký tự
-              </AppText>
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-row items-center gap-2">
+                <View
+                  className="w-8 h-8 rounded-lg items-center justify-center"
+                  style={{backgroundColor: colors.primary + '20'}}>
+                  <Icon name="FileText" className="w-4 h-4 text-primary" />
+                </View>
+                <AppText variant="body" weight="semibold" className="text-foreground">
+                  Nội dung ghi chú
+                </AppText>
+              </View>
+              <View
+                className="px-2 py-1 rounded-md"
+                style={{backgroundColor: colors.neutrals900}}>
+                <AppText variant="caption" className="text-neutrals400">
+                  {contentLength} / 5000
+                </AppText>
+              </View>
             </View>
 
-            <AppInput
-              placeholder="Nhập nội dung ghi chú..."
-              value={content}
-              onChangeText={setContent}
-              multiline
-              numberOfLines={10}
-              textAlignVertical="top"
-              style={{minHeight: 200}}
-              leftIcon={<Icon name="FileType" className="w-5 h-5 text-neutrals400" />}
-            />
+            <View
+              className="rounded-xl border-2 overflow-hidden"
+              style={{
+                backgroundColor: colors.neutrals1000,
+                borderColor: content ? colors.primary + '40' : colors.neutrals800,
+              }}>
+              <AppInput
+                placeholder="Viết nội dung chi tiết cho ghi chú của bạn...&#10;&#10;Bạn có thể viết nhiều dòng, thêm chi tiết, hoặc ghi chú quan trọng ở đây."
+                value={content}
+                onChangeText={setContent}
+                multiline
+                numberOfLines={12}
+                textAlignVertical="top"
+                style={{
+                  minHeight: 240,
+                  paddingTop: 16,
+                  paddingBottom: 16,
+                  fontSize: 15,
+                  lineHeight: 22,
+                }}
+                className="border-0"
+              />
+
+              {/* Footer helper */}
+              <View
+                className="px-4 py-3 border-t flex-row items-center gap-2"
+                style={{
+                  backgroundColor: colors.neutrals900,
+                  borderTopColor: colors.neutrals800,
+                }}>
+                <Icon name="Info" className="w-4 h-4 text-neutrals400" />
+                <AppText variant="caption" className="text-neutrals400">
+                  Nội dung này sẽ được hiển thị trong chi tiết ghi chú
+                </AppText>
+              </View>
+            </View>
           </Animated.View>
 
           {/* Info card */}

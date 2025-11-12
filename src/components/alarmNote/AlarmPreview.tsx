@@ -75,7 +75,7 @@ export function AlarmPreview({
         backgroundColor: colors.primary + '15',
         borderColor: colors.primary + '40',
       }}
-      className="mx-4 p-5 rounded-2xl border-2 mb-6 shadow-sm">
+      className="p-5 rounded-2xl border-2 shadow-sm">
       {/* Header */}
       <Animated.View
         entering={FadeInDown.delay(100).springify()}

@@ -129,9 +129,10 @@ export const useAlarmsStore = create<AlarmsState>((set, get) => ({
       // 3. Schedule notification nếu alarm enabled
       if (alarm.enabled && alarm.nextFireAt) {
         try {
-          // Lấy note title để hiển thị trong notification
+          // Lấy note title và content để hiển thị trong notification
           const note = useNotesStore.getState().notes.find(n => n.id === alarm.noteId);
           const noteTitle = note?.title || 'Báo thức';
+          const noteContent = note?.content || null;
 
           const fireDate = new Date(alarm.nextFireAt);
           const timezone = useSettingsStore.getState().timezone;
@@ -144,7 +145,7 @@ export const useAlarmsStore = create<AlarmsState>((set, get) => ({
             giờ: fireDate.toLocaleTimeString('vi-VN', {timeZone: timezone, hour: '2-digit', minute: '2-digit'}),
           });
 
-          await scheduleAlarmNotification(alarm, noteTitle);
+          await scheduleAlarmNotification(alarm, noteTitle, noteContent);
           console.log('[AlarmsStore] ✅ Đã schedule notification thành công');
         } catch (scheduleError) {
           console.error('[AlarmsStore] ❌ Lỗi schedule notification:', scheduleError);
@@ -223,6 +224,7 @@ export const useAlarmsStore = create<AlarmsState>((set, get) => ({
           if (updatedAlarm.enabled && updatedAlarm.nextFireAt) {
             const note = useNotesStore.getState().notes.find(n => n.id === updatedAlarm.noteId);
             const noteTitle = note?.title || 'Báo thức';
+            const noteContent = note?.content || null;
 
             const fireDate = new Date(updatedAlarm.nextFireAt);
             const timezone = useSettingsStore.getState().timezone;
@@ -230,7 +232,7 @@ export const useAlarmsStore = create<AlarmsState>((set, get) => ({
             console.log('[AlarmsStore] 📅 Rescheduling notification cho alarm:', updatedAlarm.id);
             console.log('[AlarmsStore] 🕐 Báo thức sẽ reo vào:', fireDate.toLocaleString('vi-VN', {timeZone: timezone}));
 
-            await scheduleAlarmNotification(updatedAlarm, noteTitle);
+            await scheduleAlarmNotification(updatedAlarm, noteTitle, noteContent);
             console.log('[AlarmsStore] ✅ Đã reschedule notification thành công');
           } else {
             console.log('[AlarmsStore] ⚠️ Alarm disabled hoặc không có nextFireAt, không schedule');

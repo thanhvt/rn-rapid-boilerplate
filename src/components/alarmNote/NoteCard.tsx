@@ -129,30 +129,30 @@ export function NoteCard({
 
       {/* Footer với timestamp và actions */}
       <View className="flex-row justify-between items-center pt-3 border-t border-neutrals800">
-        <View className="flex-row items-center gap-1.5">
+        {/* <View className="flex-row items-center gap-1.5">
           <Icon name="Clock" className="w-3.5 h-3.5 text-neutrals400" />
           <AppText variant="caption" className="text-neutrals400" raw>
             {formatTimestamp(note.updatedAt)}
           </AppText>
-        </View>
+        </View> */}
 
         <View className="flex-row gap-2">
+          {/* Nút Báo thức - Icon only, tối giản */}
           <Pressable
             onPress={handleAlarmPress}
-            className="bg-primary/20 px-3 py-1.5 rounded-lg active:opacity-70"
+            style={{backgroundColor: colors.primary + '15'}}
+            className="w-9 h-9 rounded-full items-center justify-center active:opacity-70"
             hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-            <AppText variant="caption" weight="medium" className="text-primary" raw>
-              Báo thức
-            </AppText>
+            <Icon name="Bell" className="w-4.5 h-4.5 text-primary" />
           </Pressable>
 
+          {/* Nút Xóa - Icon only, tối giản */}
           <Pressable
             onPress={handleDeletePress}
-            className="bg-error/20 px-3 py-1.5 rounded-lg active:opacity-70"
+            style={{backgroundColor: colors.error + '15'}}
+            className="w-9 h-9 rounded-full items-center justify-center active:opacity-70"
             hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-            <AppText variant="caption" weight="medium" className="text-error" raw>
-              Xóa
-            </AppText>
+            <Icon name="Trash2" className="w-4.5 h-4.5 text-error" />
           </Pressable>
         </View>
       </View>

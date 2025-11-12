@@ -115,12 +115,13 @@ async function rescheduleAllAlarms(): Promise<void> {
         // 1. Cancel notification cũ (nếu có)
         await cancelAlarmNotification(alarm.id);
 
-        // 2. Lấy note title
-        const note = await notesStore.getNoteById(alarm.noteId);
+        // 2. Lấy note title và content
+        const note = notesStore.getNoteById(alarm.noteId);
         const noteTitle = note?.title || 'Báo thức';
+        const noteContent = note?.content || null;
 
         // 3. Schedule lại với logic mới (7 ngày tới)
-        await scheduleAlarmNotification(alarm, noteTitle);
+        await scheduleAlarmNotification(alarm, noteTitle, noteContent);
 
         successCount++;
         console.log(

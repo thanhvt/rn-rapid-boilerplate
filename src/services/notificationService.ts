@@ -43,13 +43,19 @@ export async function requestNotificationPermission(): Promise<boolean> {
  */
 export async function setupNotificationCategories(): Promise<void> {
   try {
-    // Tạo notification channel cho Android
+    // Tạo notification channel cho Android với màu sắc và hiệu ứng
     if (Platform.OS === 'android') {
       await notifee.createChannel({
         id: 'alarm-note',
-        name: 'Alarm Notifications',
+        name: 'Báo thức & Ghi chú',
+        description: 'Thông báo cho báo thức và ghi chú quan trọng',
         importance: AndroidImportance.HIGH,
         sound: 'default',
+        vibration: true,
+        vibrationPattern: [300, 500, 300, 500, 300, 500], // Rung mạnh
+        lights: true,
+        lightColor: '#C9FF3D', // Màu primary (lime green)
+        badge: true,
       });
     }
 
@@ -60,12 +66,12 @@ export async function setupNotificationCategories(): Promise<void> {
         actions: [
           {
             id: 'snooze',
-            title: 'Snooze',
+            title: '⏰ Báo lại (5 phút)',
             foreground: false,
           },
           {
             id: 'dismiss',
-            title: 'Dismiss',
+            title: '✓ Tắt báo thức',
             foreground: false,
             destructive: true,
           },
@@ -73,7 +79,7 @@ export async function setupNotificationCategories(): Promise<void> {
       },
     ]);
 
-    console.log('[NotificationService] Đã setup categories');
+    console.log('[NotificationService] Đã setup categories với màu sắc và hiệu ứng');
   } catch (error) {
     console.error('[NotificationService] Lỗi setup categories:', error);
     throw error;
@@ -82,13 +88,14 @@ export async function setupNotificationCategories(): Promise<void> {
 
 /**
  * Mục đích: Schedule notification cho alarm
- * Tham số vào: alarm (Alarm), noteTitle (string)
+ * Tham số vào: alarm (Alarm), noteTitle (string), noteContent (string | null)
  * Tham số ra: Promise<void>
  * Khi nào dùng: Khi tạo/cập nhật alarm enabled
  */
 export async function scheduleAlarmNotification(
   alarm: Alarm,
   noteTitle: string,
+  noteContent?: string | null,
 ): Promise<void> {
   try {
     console.log('[NotificationService] 📅 Bắt đầu schedule alarm:', alarm.id);
@@ -96,9 +103,9 @@ export async function scheduleAlarmNotification(
     console.log('[NotificationService] Note title:', noteTitle);
 
     if (alarm.type === 'ONE_TIME') {
-      await scheduleOneTimeAlarm(alarm, noteTitle);
+      await scheduleOneTimeAlarm(alarm, noteTitle, noteContent);
     } else if (alarm.type === 'REPEATING') {
-      await scheduleRepeatingAlarm(alarm, noteTitle);
+      await scheduleRepeatingAlarm(alarm, noteTitle, noteContent);
     }
 
     console.log('[NotificationService] ✅ Đã schedule alarm thành công:', alarm.id);
@@ -110,13 +117,14 @@ export async function scheduleAlarmNotification(
 
 /**
  * Mục đích: Schedule ONE_TIME alarm
- * Tham số vào: alarm (Alarm), noteTitle (string)
+ * Tham số vào: alarm (Alarm), noteTitle (string), noteContent (string | null)
  * Tham số ra: Promise<void>
  * Khi nào dùng: Internal helper
  */
 async function scheduleOneTimeAlarm(
   alarm: Alarm,
   noteTitle: string,
+  noteContent?: string | null,
 ): Promise<void> {
   if (!alarm.nextFireAt) {
     throw new Error('ONE_TIME alarm phải có nextFireAt');
@@ -148,12 +156,30 @@ async function scheduleOneTimeAlarm(
     timestamp: alarm.nextFireAt,
   };
 
+  // Format notification body với nhiều thông tin hơn
+  const formattedDate = new Date(alarm.nextFireAt).toLocaleDateString('vi-VN', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  let body = `⏰ Báo thức lúc ${alarm.timeHHmm}\n📅 ${formattedDate}`;
+  if (noteContent) {
+    // Giới hạn content preview ở 100 ký tự
+    const contentPreview = noteContent.length > 100
+      ? noteContent.substring(0, 100) + '...'
+      : noteContent;
+    body += `\n\n${contentPreview}`;
+  }
+
   // Schedule notification
   await notifee.createTriggerNotification(
     {
       id: alarm.id,
-      title: noteTitle,
-      body: `Báo thức lúc ${alarm.timeHHmm}`,
+      title: `🔔 ${noteTitle}`,
+      body: body,
+      subtitle: 'Báo thức ghi chú',
       data: {
         alarmId: alarm.id,
         noteId: alarm.noteId,
@@ -163,12 +189,27 @@ async function scheduleOneTimeAlarm(
         categoryId: 'ALARM_NOTE',
         critical: true,
         criticalVolume: 1.0,
+        // iOS không hỗ trợ BigText như Android, chỉ có thể dùng subtitle
       },
       android: {
         channelId: 'alarm-note',
         sound: 'default',
         importance: AndroidImportance.HIGH,
+        color: '#C9FF3D', // Primary color (lime green)
+        smallIcon: 'ic_notification',
+        largeIcon: 'ic_launcher',
+        vibrationPattern: [300, 500, 300, 500],
+        lights: ['#C9FF3D', 300, 600],
         pressAction: {
+          id: 'default',
+        },
+        style: noteContent ? {
+          type: 1, // BigTextStyle
+          text: noteContent,
+          title: `🔔 ${noteTitle}`,
+          summary: `Báo thức lúc ${alarm.timeHHmm}`,
+        } : undefined,
+        fullScreenAction: {
           id: 'default',
         },
       },
@@ -181,13 +222,14 @@ async function scheduleOneTimeAlarm(
 
 /**
  * Mục đích: Schedule REPEATING alarm
- * Tham số vào: alarm (Alarm), noteTitle (string)
+ * Tham số vào: alarm (Alarm), noteTitle (string), noteContent (string | null)
  * Tham số ra: Promise<void>
  * Khi nào dùng: Internal helper
  */
 async function scheduleRepeatingAlarm(
   alarm: Alarm,
   noteTitle: string,
+  noteContent?: string | null,
 ): Promise<void> {
   if (!alarm.daysOfWeek || alarm.daysOfWeek.length === 0) {
     throw new Error('REPEATING alarm phải có daysOfWeek');
@@ -206,6 +248,9 @@ async function scheduleRepeatingAlarm(
   // Notifee không hỗ trợ weekly repeating trigger trực tiếp
   // Workaround: Schedule cho mỗi ngày trong tuần
   const now = new Date();
+
+  // Day names in Vietnamese
+  const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
   for (const weekday of alarm.daysOfWeek) {
     // Tính timestamp cho lần đầu tiên alarm sẽ reo vào ngày này
@@ -238,12 +283,22 @@ async function scheduleRepeatingAlarm(
       repeatFrequency: RepeatFrequency.WEEKLY,
     };
 
+    // Format notification body
+    let body = `⏰ Báo thức lặp lại mỗi ${dayNames[weekday]} lúc ${alarm.timeHHmm}`;
+    if (noteContent) {
+      const contentPreview = noteContent.length > 100
+        ? noteContent.substring(0, 100) + '...'
+        : noteContent;
+      body += `\n\n${contentPreview}`;
+    }
+
     // Schedule notification cho ngày này
     await notifee.createTriggerNotification(
       {
         id: `${alarm.id}-${weekday}`, // Unique ID cho mỗi ngày
-        title: noteTitle,
-        body: `Báo thức lặp lúc ${alarm.timeHHmm}`,
+        title: `🔔 ${noteTitle}`,
+        body: body,
+        subtitle: 'Báo thức lặp lại',
         data: {
           alarmId: alarm.id,
           noteId: alarm.noteId,
@@ -259,7 +314,21 @@ async function scheduleRepeatingAlarm(
           channelId: 'alarm-note',
           sound: 'default',
           importance: AndroidImportance.HIGH,
+          color: '#C9FF3D',
+          smallIcon: 'ic_notification',
+          largeIcon: 'ic_launcher',
+          vibrationPattern: [300, 500, 300, 500],
+          lights: ['#C9FF3D', 300, 600],
           pressAction: {
+            id: 'default',
+          },
+          style: noteContent ? {
+            type: 1, // BigTextStyle
+            text: noteContent,
+            title: `🔔 ${noteTitle}`,
+            summary: `Lặp lại mỗi ${dayNames[weekday]} lúc ${alarm.timeHHmm}`,
+          } : undefined,
+          fullScreenAction: {
             id: 'default',
           },
         },
