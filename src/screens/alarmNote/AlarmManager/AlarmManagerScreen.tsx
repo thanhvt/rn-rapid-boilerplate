@@ -169,17 +169,17 @@ export function AlarmManagerScreen({
           backgroundColor: colors.neutrals1000,
           borderBottomColor: colors.neutrals800,
         }}
-        className="px-4 pt-12 pb-4 shadow-sm border-b">
+        className="px-4 pt-2 pb-4 shadow-sm border">
         <View className="flex-row items-center justify-between mb-2">
           <AppText variant="heading2" weight="bold" className="text-foreground flex-1">
             {note?.title || 'Ghi chú'}
           </AppText>
-          <Pressable
+          {/* <Pressable
             onPress={handleAddAlarm}
             className="w-10 h-10 rounded-full items-center justify-center"
             style={{backgroundColor: colors.primary}}>
             <Icon name="Plus" className="w-5 h-5 text-background" />
-          </Pressable>
+          </Pressable> */}
         </View>
 
         {/* Stats */}

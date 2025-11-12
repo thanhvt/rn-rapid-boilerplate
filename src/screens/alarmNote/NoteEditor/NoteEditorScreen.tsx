@@ -6,7 +6,7 @@
  */
 
 import React, {useEffect, useState, useCallback, useRef} from 'react';
-import {View, ScrollView, KeyboardAvoidingView, Platform, TextInput} from 'react-native';
+import {View, ScrollView, KeyboardAvoidingView, Platform, TextInput, Keyboard} from 'react-native';
 import Animated, {FadeInDown, FadeIn} from 'react-native-reanimated';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useNotesStore} from '@/stores/notesStore';
@@ -15,6 +15,7 @@ import {AppText, AppInput, AppButton, Icon} from '@/components/ui';
 import {useColors} from '@/hooks/useColors';
 import {useToast} from '@/components/ui/ToastProvider';
 import {useDialog} from '@/components/ui/DialogProvider';
+import {useInsets} from '@/hooks/useInsets';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NoteEditor'>;
 
@@ -315,11 +316,12 @@ export function NoteEditorScreen({
               }}>
               <AppInput
                 ref={contentInputRef}
-                placeholder="Viết nội dung chi tiết cho ghi chú của bạn...&#10;&#10;Bạn có thể viết nhiều dòng, thêm chi tiết, hoặc ghi chú quan trọng ở đây."
+                placeholder="..."
                 value={content}
                 onChangeText={setContent}
-                multiline
+                multiline={true}
                 numberOfLines={12}
+                variant="textarea"
                 textAlignVertical="top"
                 style={{
                   minHeight: 240,

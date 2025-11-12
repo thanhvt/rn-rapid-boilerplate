@@ -164,14 +164,14 @@ async function scheduleOneTimeAlarm(
     day: 'numeric',
   });
 
-  let body = `⏰ Báo thức lúc ${alarm.timeHHmm}\n📅 ${formattedDate}`;
-  if (noteContent) {
-    // Giới hạn content preview ở 100 ký tự
-    const contentPreview = noteContent.length > 100
-      ? noteContent.substring(0, 100) + '...'
-      : noteContent;
-    body += `\n\n${contentPreview}`;
-  }
+  let body = `⏰ ${noteContent}`;
+  // if (noteContent) {
+  //   // Giới hạn content preview ở 100 ký tự
+  //   const contentPreview = noteContent.length > 100
+  //     ? noteContent.substring(0, 100) + '...'
+  //     : noteContent;
+  //   body += `\n\n${contentPreview}`;
+  // }
 
   // Schedule notification
   await notifee.createTriggerNotification(
@@ -179,7 +179,7 @@ async function scheduleOneTimeAlarm(
       id: alarm.id,
       title: `🔔 ${noteTitle}`,
       body: body,
-      subtitle: 'Báo thức ghi chú',
+      // subtitle: 'Báo thức ghi chú',
       data: {
         alarmId: alarm.id,
         noteId: alarm.noteId,
