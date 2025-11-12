@@ -14,6 +14,22 @@ const MainTabNavigator: React.FC = () => {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        // tabBarStyle: {
+        //   height: 60,
+        // },
+        // tabBarHideOnKeyboard: true,
+        // tabBarShowLabel: false,
+        // tabBarActiveTintColor: 'red',
+        // tabBarInactiveTintColor: 'blue',
+        // tabBarLabelStyle: {
+        //   fontSize: 12,
+        //   fontWeight: 'bold',
+        // },
+        // tabBarIconStyle: {
+        //   width: 24,
+        //   height: 24,
+        // },
+        // tabBarAccessibilityLabel: 'Home',
       }}
     >
       <Tab.Screen

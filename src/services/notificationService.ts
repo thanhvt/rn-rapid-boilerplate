@@ -156,22 +156,8 @@ async function scheduleOneTimeAlarm(
     timestamp: alarm.nextFireAt,
   };
 
-  // Format notification body với nhiều thông tin hơn
-  const formattedDate = new Date(alarm.nextFireAt).toLocaleDateString('vi-VN', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  let body = `⏰ ${noteContent}`;
-  // if (noteContent) {
-  //   // Giới hạn content preview ở 100 ký tự
-  //   const contentPreview = noteContent.length > 100
-  //     ? noteContent.substring(0, 100) + '...'
-  //     : noteContent;
-  //   body += `\n\n${contentPreview}`;
-  // }
+  // Format notification body
+  let body = `⏰ ${noteContent || 'Báo thức'}`;
 
   // Schedule notification
   await notifee.createTriggerNotification(
@@ -190,14 +176,16 @@ async function scheduleOneTimeAlarm(
         critical: true,
         criticalVolume: 1.0,
         // iOS không hỗ trợ BigText như Android, chỉ có thể dùng subtitle
+        // Thêm badge number để nổi bật hơn
+        badgeCount: 1,
       },
       android: {
         channelId: 'alarm-note',
         sound: 'default',
         importance: AndroidImportance.HIGH,
         color: '#C9FF3D', // Primary color (lime green)
-        smallIcon: 'ic_notification',
-        largeIcon: 'ic_launcher',
+        // smallIcon: Không set để dùng default app icon
+        // largeIcon: 'ic_launcher', // Không cần vì sẽ tự động dùng app icon
         vibrationPattern: [300, 500, 300, 500],
         lights: ['#C9FF3D', 300, 600],
         pressAction: {
@@ -309,14 +297,16 @@ async function scheduleRepeatingAlarm(
           categoryId: 'ALARM_NOTE',
           critical: true,
           criticalVolume: 1.0,
+          // Thêm badge number để nổi bật hơn
+          badgeCount: 1,
         },
         android: {
           channelId: 'alarm-note',
           sound: 'default',
           importance: AndroidImportance.HIGH,
           color: '#C9FF3D',
-          smallIcon: 'ic_notification',
-          largeIcon: 'ic_launcher',
+          // smallIcon: Không set để dùng default app icon
+          // largeIcon: 'ic_launcher', // Không cần vì sẽ tự động dùng app icon
           vibrationPattern: [300, 500, 300, 500],
           lights: ['#C9FF3D', 300, 600],
           pressAction: {

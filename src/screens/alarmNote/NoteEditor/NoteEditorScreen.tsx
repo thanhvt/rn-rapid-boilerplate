@@ -24,6 +24,7 @@ export function NoteEditorScreen({
   navigation,
 }: Props): React.JSX.Element {
   const colors = useColors();
+  const insets = useInsets();
   const {showSuccess, showError, showWarning} = useToast();
   const {showConfirm} = useDialog();
 
@@ -39,6 +40,7 @@ export function NoteEditorScreen({
   const [isSaving, setIsSaving] = useState(false);
   const [titleError, setTitleError] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const originalTitle = useRef('');
   const originalContent = useRef('');
@@ -76,6 +78,32 @@ export function NoteEditorScreen({
       title: isEditMode ? 'Chỉnh sửa ghi chú' : 'Tạo ghi chú mới',
     });
   }, [navigation, isEditMode]);
+
+  /**
+   * Mục đích: Listen keyboard show/hide để hiển thị sticky buttons
+   * Tham số vào: Không
+   * Tham số ra: void
+   * Khi nào dùng: Component mount
+   */
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setIsKeyboardVisible(true);
+      },
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setIsKeyboardVisible(false);
+      },
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   /**
    * Mục đích: Detect changes để hiển thị warning khi cancel
@@ -246,15 +274,16 @@ export function NoteEditorScreen({
   const contentLength = content.trim().length;
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1"
-      style={{backgroundColor: colors.background}}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
+    <View className="flex-1" style={{backgroundColor: colors.background}}>
+      <KeyboardAvoidingView
         className="flex-1"
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        <View className="p-4">
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          className="flex-1"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{paddingBottom: isKeyboardVisible ? 0 : 16}}>
+          <View className="p-4">
           {/* Title input */}
           <Animated.View entering={FadeInDown.delay(100).springify()} className="mb-4">
             <View className="flex-row items-center justify-between mb-2">
@@ -323,6 +352,12 @@ export function NoteEditorScreen({
                 numberOfLines={12}
                 variant="textarea"
                 textAlignVertical="top"
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  // Nhấn Enter/Done → Tự động save
+                  Keyboard.dismiss();
+                  handleSave();
+                }}
                 style={{
                   minHeight: 240,
                   paddingTop: 16,
@@ -364,48 +399,85 @@ export function NoteEditorScreen({
             </Animated.View>
           )}
 
-          {/* Action buttons */}
-          <Animated.View entering={FadeInDown.delay(300).springify()} className="gap-3">
-            <AppButton
-              variant="primary"
-              onPress={handleSave}
-              loading={isSaving}
-              disabled={isSaving}>
-              <View className="flex-row items-center gap-2">
-                <Icon name="Save" className="w-5 h-5 text-background" />
-                <AppText variant="body" weight="semibold" className="text-background" raw>
-                  {isEditMode ? 'Cập nhật' : 'Tạo ghi chú'}
-                </AppText>
-              </View>
-            </AppButton>
-
-            <AppButton variant="outline" onPress={handleCancel} disabled={isSaving}>
-              <View className="flex-row items-center gap-2">
-                <Icon name="X" className="w-5 h-5 text-foreground" />
-                <AppText variant="body" weight="semibold" className="text-foreground" raw>
-                  Hủy
-                </AppText>
-              </View>
-            </AppButton>
-
-            {isEditMode && (
+          {/* Action buttons - Chỉ hiển thị khi keyboard ẩn */}
+          {!isKeyboardVisible && (
+            <Animated.View entering={FadeInDown.delay(300).springify()} className="gap-3">
               <AppButton
-                variant="ghost"
-                onPress={handleDelete}
-                disabled={isSaving}
-                className="border border-error/30">
+                variant="primary"
+                onPress={handleSave}
+                loading={isSaving}
+                disabled={isSaving}>
                 <View className="flex-row items-center gap-2">
-                  <Icon name="Trash2" className="w-5 h-5 text-error" />
-                  <AppText variant="body" weight="semibold" className="text-error" raw>
-                    Xóa ghi chú
+                  <Icon name="Save" className="w-5 h-5 text-background" />
+                  <AppText variant="body" weight="semibold" className="text-background" raw>
+                    {isEditMode ? 'Cập nhật' : 'Tạo ghi chú'}
                   </AppText>
                 </View>
               </AppButton>
-            )}
-          </Animated.View>
+
+              <AppButton variant="outline" onPress={handleCancel} disabled={isSaving}>
+                <View className="flex-row items-center gap-2">
+                  <Icon name="X" className="w-5 h-5 text-foreground" />
+                  <AppText variant="body" weight="semibold" className="text-foreground" raw>
+                    Hủy
+                  </AppText>
+                </View>
+              </AppButton>
+
+              {isEditMode && (
+                <AppButton
+                  variant="ghost"
+                  onPress={handleDelete}
+                  disabled={isSaving}
+                  className="border border-error/30">
+                  <View className="flex-row items-center gap-2">
+                    <Icon name="Trash2" className="w-5 h-5 text-error" />
+                    <AppText variant="body" weight="semibold" className="text-error" raw>
+                      Xóa ghi chú
+                    </AppText>
+                  </View>
+                </AppButton>
+              )}
+            </Animated.View>
+          )}
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+
+      {/* Sticky buttons khi keyboard hiển thị */}
+      {isKeyboardVisible && (
+        <Animated.View
+          entering={FadeInDown.springify()}
+          style={{
+            backgroundColor: colors.background,
+            borderTopColor: colors.border,
+            paddingBottom: insets.bottom || 16,
+          }}
+          className="border-t px-4 pt-3 gap-3">
+          <AppButton
+            variant="primary"
+            onPress={handleSave}
+            loading={isSaving}
+            disabled={isSaving}>
+            <View className="flex-row items-center gap-2">
+              <Icon name="Save" className="w-5 h-5 text-background" />
+              <AppText variant="body" weight="semibold" className="text-background" raw>
+                {isEditMode ? 'Cập nhật' : 'Tạo ghi chú'}
+              </AppText>
+            </View>
+          </AppButton>
+
+          <AppButton variant="outline" onPress={handleCancel} disabled={isSaving}>
+            <View className="flex-row items-center gap-2">
+              <Icon name="X" className="w-5 h-5 text-foreground" />
+              <AppText variant="body" weight="semibold" className="text-foreground" raw>
+                Hủy
+              </AppText>
+            </View>
+          </AppButton>
+        </Animated.View>
+      )}
+    </View>
   );
 }
 
