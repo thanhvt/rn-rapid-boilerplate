@@ -5,28 +5,29 @@
  * Khi nào dùng: Khi người dùng muốn thay đổi cài đặt (snooze, permissions...)
  */
 
-import React, {useEffect, useState} from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Platform,
-} from 'react-native';
+import React, {useEffect, useState, useCallback} from 'react';
+import {View, ScrollView, Platform} from 'react-native';
+import Animated, {FadeInDown, FadeIn} from 'react-native-reanimated';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useSettingsStore} from '@/stores/settingsStore';
 import {requestNotificationPermission} from '@/services/notificationService';
 import {forceRescheduleAll} from '@/services/backgroundRefreshService';
 import type {RootStackParamList} from '@/navigation/types';
+import {AppText, AppButton, Icon, Chip, Badge} from '@/components/ui';
+import {useColors} from '@/hooks/useColors';
+import {useToast} from '@/components/ui/ToastProvider';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AlarmNoteSettings'>;
 
 const SNOOZE_OPTIONS = [5, 10, 15, 30];
 
 export function SettingsScreen({}: Props): React.JSX.Element {
-  const snoozeMinutesDefault = useSettingsStore(state => state.snoozeMinutesDefault);
+  const colors = useColors();
+  const {showSuccess, showError} = useToast();
+
+  const snoozeMinutesDefault = useSettingsStore(
+    state => state.snoozeMinutesDefault,
+  );
   const timezone = useSettingsStore(state => state.timezone);
   const loading = useSettingsStore(state => state.loading);
   const loadPreferences = useSettingsStore(state => state.loadPreferences);
@@ -37,15 +38,13 @@ export function SettingsScreen({}: Props): React.JSX.Element {
   >('unknown');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Load preferences khi mount
-  useEffect(() => {
-    loadPreferences();
-    checkNotificationPermission();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Kiểm tra notification permission
-  const checkNotificationPermission = async () => {
+  /**
+   * Mục đích: Kiểm tra notification permission
+   * Tham số vào: Không
+   * Tham số ra: Promise<void>
+   * Khi nào dùng: Component mount
+   */
+  const checkNotificationPermission = useCallback(async () => {
     try {
       const granted = await requestNotificationPermission();
       setNotificationPermission(granted ? 'granted' : 'denied');
@@ -53,218 +52,315 @@ export function SettingsScreen({}: Props): React.JSX.Element {
       console.error('Lỗi khi kiểm tra notification permission:', error);
       setNotificationPermission('unknown');
     }
-  };
+  }, []);
 
-  // Xử lý thay đổi snooze duration
-  const handleSnoozeChange = async (minutes: number) => {
-    try {
-      await setSnoozeMinutes(minutes);
-      Alert.alert('Thành công', `Đã đặt thời gian báo lại: ${minutes} phút`);
-    } catch (error) {
-      Alert.alert('Lỗi', 'Không thể cập nhật cài đặt');
-      console.error('Lỗi khi cập nhật snooze:', error);
-    }
-  };
+  /**
+   * Mục đích: Load preferences khi mount
+   * Tham số vào: Không
+   * Tham số ra: void
+   * Khi nào dùng: Component mount
+   */
+  useEffect(() => {
+    loadPreferences();
+    checkNotificationPermission();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Xử lý request notification permission
-  const handleRequestPermission = async () => {
+  /**
+   * Mục đích: Xử lý thay đổi snooze duration
+   * Tham số vào: minutes (number)
+   * Tham số ra: Promise<void>
+   * Khi nào dùng: User chọn snooze option
+   */
+  const handleSnoozeChange = useCallback(
+    async (minutes: number) => {
+      try {
+        await setSnoozeMinutes(minutes);
+        showSuccess(`Đã đặt thời gian báo lại: ${minutes} phút`);
+      } catch (error) {
+        showError('Không thể cập nhật cài đặt');
+        console.error('Lỗi khi cập nhật snooze:', error);
+      }
+    },
+    [setSnoozeMinutes, showSuccess, showError],
+  );
+
+  /**
+   * Mục đích: Xử lý request notification permission
+   * Tham số vào: Không
+   * Tham số ra: Promise<void>
+   * Khi nào dùng: User nhấn nút yêu cầu quyền
+   */
+  const handleRequestPermission = useCallback(async () => {
     try {
       const granted = await requestNotificationPermission();
       setNotificationPermission(granted ? 'granted' : 'denied');
       if (granted) {
-        Alert.alert('Thành công', 'Đã cấp quyền thông báo');
+        showSuccess('Đã cấp quyền thông báo');
       } else {
-        Alert.alert(
-          'Bị từ chối',
-          'Vui lòng vào Cài đặt > AlarmNote để cấp quyền thông báo',
-        );
+        showError('Vui lòng vào Cài đặt > AlarmNote để cấp quyền thông báo');
       }
     } catch (error) {
-      Alert.alert('Lỗi', 'Không thể yêu cầu quyền thông báo');
+      showError('Không thể yêu cầu quyền thông báo');
       console.error('Lỗi khi request permission:', error);
     }
-  };
+  }, [showSuccess, showError]);
 
-  // Xử lý force refresh notifications
-  const handleRefreshNotifications = async () => {
+  /**
+   * Mục đích: Xử lý force refresh notifications
+   * Tham số vào: Không
+   * Tham số ra: Promise<void>
+   * Khi nào dùng: User nhấn nút làm mới thông báo
+   */
+  const handleRefreshNotifications = useCallback(async () => {
     try {
       setIsRefreshing(true);
       console.log('[Settings] Bắt đầu force refresh notifications...');
       await forceRescheduleAll();
-      Alert.alert(
-        'Thành công',
+      showSuccess(
         'Đã làm mới tất cả thông báo. Tất cả alarms đã được reschedule.',
       );
     } catch (error) {
-      Alert.alert('Lỗi', 'Không thể làm mới thông báo');
+      showError('Không thể làm mới thông báo');
       console.error('Lỗi khi refresh notifications:', error);
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [showSuccess, showError]);
 
+  // Loading state
   if (loading) {
     return (
-      <View className="flex-1 bg-gray-50 justify-center items-center">
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <Text className="text-gray-500 mt-4">Đang tải...</Text>
+      <View
+        className="flex-1 justify-center items-center"
+        style={{backgroundColor: colors.background}}>
+        <Animated.View entering={FadeIn.duration(400)}>
+          <Icon name="Settings" className="w-16 h-16 text-primary mb-4" />
+          <AppText variant="body" className="text-neutrals400">
+            Đang tải cài đặt...
+          </AppText>
+        </Animated.View>
       </View>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView
+      className="flex-1"
+      style={{backgroundColor: colors.background}}
+      showsVerticalScrollIndicator={false}>
       <View className="p-4">
         {/* Snooze Settings */}
-        <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-          <Text className="text-lg font-semibold text-gray-800 mb-2">
-            Thời gian báo lại
-          </Text>
-          <Text className="text-sm text-gray-600 mb-4">
+        <Animated.View
+          entering={FadeInDown.delay(100).springify()}
+          style={{
+            backgroundColor: colors.neutrals1000,
+            borderColor: colors.neutrals800,
+          }}
+          className="rounded-lg p-4 mb-4 shadow-sm border">
+          <View className="flex-row items-center gap-2 mb-2">
+            <Icon name="Timer" className="w-5 h-5 text-primary" />
+            <AppText variant="heading3" weight="bold" className="text-foreground">
+              Thời gian báo lại
+            </AppText>
+          </View>
+          <AppText variant="bodySmall" className="text-neutrals400 mb-4">
             Chọn thời gian báo lại mặc định khi nhấn "Snooze"
-          </Text>
+          </AppText>
 
           <View className="flex-row flex-wrap gap-2">
             {SNOOZE_OPTIONS.map(minutes => (
-              <TouchableOpacity
+              <Chip
                 key={minutes}
-                className={`px-4 py-3 rounded-lg ${
-                  snoozeMinutesDefault === minutes
-                    ? 'bg-blue-500'
-                    : 'bg-gray-200'
-                }`}
+                variant={snoozeMinutesDefault === minutes ? 'primary' : 'outline'}
+                selected={snoozeMinutesDefault === minutes}
                 onPress={() => handleSnoozeChange(minutes)}>
-                <Text
-                  className={`font-medium ${
-                    snoozeMinutesDefault === minutes
-                      ? 'text-white'
-                      : 'text-gray-700'
-                  }`}>
-                  {minutes} phút
-                </Text>
-              </TouchableOpacity>
+                {minutes} phút
+              </Chip>
             ))}
           </View>
-        </View>
+        </Animated.View>
 
         {/* Notification Permission */}
-        <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-          <Text className="text-lg font-semibold text-gray-800 mb-2">
-            Quyền thông báo
-          </Text>
-          <Text className="text-sm text-gray-600 mb-4">
+        <Animated.View
+          entering={FadeInDown.delay(150).springify()}
+          style={{
+            backgroundColor: colors.neutrals1000,
+            borderColor: colors.neutrals800,
+          }}
+          className="rounded-lg p-4 mb-4 shadow-sm border">
+          <View className="flex-row items-center gap-2 mb-2">
+            <Icon name="Bell" className="w-5 h-5 text-primary" />
+            <AppText variant="heading3" weight="bold" className="text-foreground">
+              Quyền thông báo
+            </AppText>
+          </View>
+          <AppText variant="bodySmall" className="text-neutrals400 mb-4">
             App cần quyền thông báo để gửi báo thức
-          </Text>
+          </AppText>
 
           <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center">
-              <View
-                className={`w-3 h-3 rounded-full mr-2 ${
+            <View className="flex-row items-center gap-2">
+              <Badge
+                variant={
                   notificationPermission === 'granted'
-                    ? 'bg-green-500'
+                    ? 'success'
                     : notificationPermission === 'denied'
-                    ? 'bg-red-500'
-                    : 'bg-gray-400'
-                }`}
-              />
-              <Text className="text-gray-700">
+                    ? 'error'
+                    : 'default'
+                }>
                 {notificationPermission === 'granted'
                   ? 'Đã cấp quyền'
                   : notificationPermission === 'denied'
                   ? 'Bị từ chối'
                   : 'Chưa xác định'}
-              </Text>
+              </Badge>
             </View>
 
             {notificationPermission !== 'granted' && (
-              <TouchableOpacity
-                className="bg-blue-500 px-4 py-2 rounded-lg"
+              <AppButton
+                variant="primary"
+                size="sm"
                 onPress={handleRequestPermission}>
-                <Text className="text-white font-medium">Yêu cầu quyền</Text>
-              </TouchableOpacity>
+                Yêu cầu quyền
+              </AppButton>
             )}
           </View>
-        </View>
+        </Animated.View>
 
         {/* Refresh Notifications */}
-        <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-          <Text className="text-lg font-semibold text-gray-800 mb-2">
-            Làm mới thông báo
-          </Text>
-          <Text className="text-sm text-gray-600 mb-4">
+        <Animated.View
+          entering={FadeInDown.delay(200).springify()}
+          style={{
+            backgroundColor: colors.neutrals1000,
+            borderColor: colors.neutrals800,
+          }}
+          className="rounded-lg p-4 mb-4 shadow-sm border">
+          <View className="flex-row items-center gap-2 mb-2">
+            <Icon name="RefreshCw" className="w-5 h-5 text-primary" />
+            <AppText variant="heading3" weight="bold" className="text-foreground">
+              Làm mới thông báo
+            </AppText>
+          </View>
+          <AppText variant="bodySmall" className="text-neutrals400 mb-4">
             Reschedule tất cả alarms. Hữu ích khi thông báo không hoạt động đúng
             hoặc sau khi cập nhật app.
-          </Text>
+          </AppText>
 
-          <TouchableOpacity
-            className={`px-4 py-3 rounded-lg ${
-              isRefreshing ? 'bg-gray-400' : 'bg-blue-500'
-            }`}
+          <AppButton
+            variant="outline"
             onPress={handleRefreshNotifications}
+            loading={isRefreshing}
             disabled={isRefreshing}>
-            <View className="flex-row items-center justify-center">
-              {isRefreshing && (
-                <ActivityIndicator
-                  size="small"
-                  color="#ffffff"
-                  className="mr-2"
-                />
-              )}
-              <Text className="text-white font-medium text-center">
+            <View className="flex-row items-center gap-2">
+              <Icon name="RefreshCw" className="w-5 h-5 text-foreground" />
+              <AppText variant="body" weight="semibold" className="text-foreground" raw>
                 {isRefreshing ? 'Đang làm mới...' : 'Làm mới thông báo'}
-              </Text>
+              </AppText>
             </View>
-          </TouchableOpacity>
-        </View>
+          </AppButton>
+        </Animated.View>
 
         {/* Timezone Info */}
-        <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-          <Text className="text-lg font-semibold text-gray-800 mb-2">
-            Múi giờ
-          </Text>
-          <Text className="text-sm text-gray-600 mb-2">
+        <Animated.View
+          entering={FadeInDown.delay(250).springify()}
+          style={{
+            backgroundColor: colors.neutrals1000,
+            borderColor: colors.neutrals800,
+          }}
+          className="rounded-lg p-4 mb-4 shadow-sm border">
+          <View className="flex-row items-center gap-2 mb-2">
+            <Icon name="Globe" className="w-5 h-5 text-primary" />
+            <AppText variant="heading3" weight="bold" className="text-foreground">
+              Múi giờ
+            </AppText>
+          </View>
+          <AppText variant="bodySmall" className="text-neutrals400 mb-2">
             Múi giờ hiện tại của thiết bị
-          </Text>
-          <Text className="text-gray-700 font-mono">{timezone}</Text>
-        </View>
+          </AppText>
+          <View
+            className="p-3 rounded-lg"
+            style={{backgroundColor: colors.neutrals900}}>
+            <AppText variant="body" className="text-primary font-mono" raw>
+              {timezone}
+            </AppText>
+          </View>
+        </Animated.View>
 
         {/* App Info */}
-        <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-          <Text className="text-lg font-semibold text-gray-800 mb-2">
-            Thông tin ứng dụng
-          </Text>
+        <Animated.View
+          entering={FadeInDown.delay(300).springify()}
+          style={{
+            backgroundColor: colors.neutrals1000,
+            borderColor: colors.neutrals800,
+          }}
+          className="rounded-lg p-4 mb-4 shadow-sm border">
+          <View className="flex-row items-center gap-2 mb-4">
+            <Icon name="Info" className="w-5 h-5 text-primary" />
+            <AppText variant="heading3" weight="bold" className="text-foreground">
+              Thông tin ứng dụng
+            </AppText>
+          </View>
 
-          <View className="space-y-2">
-            <View className="flex-row justify-between py-2 border-b border-gray-100">
-              <Text className="text-gray-600">Phiên bản</Text>
-              <Text className="text-gray-800 font-medium">1.0.0</Text>
+          <View className="gap-3">
+            <View
+              className="flex-row justify-between py-3 border-b"
+              style={{borderBottomColor: colors.neutrals800}}>
+              <AppText variant="body" className="text-neutrals400">
+                Phiên bản
+              </AppText>
+              <AppText variant="body" weight="semibold" className="text-foreground">
+                1.0.0
+              </AppText>
             </View>
 
-            <View className="flex-row justify-between py-2 border-b border-gray-100">
-              <Text className="text-gray-600">Build</Text>
-              <Text className="text-gray-800 font-medium">1</Text>
+            <View
+              className="flex-row justify-between py-3 border-b"
+              style={{borderBottomColor: colors.neutrals800}}>
+              <AppText variant="body" className="text-neutrals400">
+                Build
+              </AppText>
+              <AppText variant="body" weight="semibold" className="text-foreground">
+                1
+              </AppText>
             </View>
 
-            <View className="flex-row justify-between py-2">
-              <Text className="text-gray-600">Platform</Text>
-              <Text className="text-gray-800 font-medium">{Platform.OS}</Text>
+            <View className="flex-row justify-between py-3">
+              <AppText variant="body" className="text-neutrals400">
+                Platform
+              </AppText>
+              <AppText variant="body" weight="semibold" className="text-foreground">
+                {Platform.OS}
+              </AppText>
             </View>
           </View>
-        </View>
+        </Animated.View>
 
         {/* About */}
-        <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-          <Text className="text-lg font-semibold text-gray-800 mb-2">
-            Giới thiệu
-          </Text>
-          <Text className="text-sm text-gray-600 leading-6">
-            AlarmNote là ứng dụng kết hợp ghi chú và báo thức, giúp bạn không
-            bao giờ quên những việc quan trọng.
-          </Text>
-          <Text className="text-sm text-gray-500 mt-4">
-            Phát triển bởi Vu Tien Thanh
-          </Text>
-        </View>
+        <Animated.View
+          entering={FadeInDown.delay(350).springify()}
+          style={{
+            backgroundColor: colors.neutrals1000,
+            borderColor: colors.neutrals800,
+          }}
+          className="rounded-lg p-4 mb-4 shadow-sm border">
+          <View className="flex-row items-center gap-2 mb-3">
+            <Icon name="Heart" className="w-5 h-5 text-error" />
+            <AppText variant="heading3" weight="bold" className="text-foreground">
+              Giới thiệu
+            </AppText>
+          </View>
+          <AppText variant="body" className="text-neutrals300 leading-6 mb-4">
+            AlarmNote là ứng dụng kết hợp ghi chú và báo thức, giúp bạn không bao
+            giờ quên những việc quan trọng.
+          </AppText>
+          <View className="flex-row items-center gap-2">
+            <Icon name="Code" className="w-4 h-4 text-primary" />
+            <AppText variant="bodySmall" className="text-neutrals400">
+              Phát triển bởi Vu Tien Thanh
+            </AppText>
+          </View>
+        </Animated.View>
       </View>
     </ScrollView>
   );

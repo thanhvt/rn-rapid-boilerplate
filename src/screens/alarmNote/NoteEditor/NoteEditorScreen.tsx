@@ -5,21 +5,16 @@
  * Khi nào dùng: Khi người dùng tạo mới hoặc chỉnh sửa ghi chú
  */
 
-import React, {useEffect, useState} from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-} from 'react-native';
+import React, {useEffect, useState, useCallback, useRef} from 'react';
+import {View, ScrollView, KeyboardAvoidingView, Platform} from 'react-native';
+import Animated, {FadeInDown, FadeIn} from 'react-native-reanimated';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useNotesStore} from '@/stores/notesStore';
 import type {RootStackParamList} from '@/navigation/types';
+import {AppText, AppInput, AppButton, Icon} from '@/components/ui';
+import {useColors} from '@/hooks/useColors';
+import {useToast} from '@/components/ui/ToastProvider';
+import {useDialog} from '@/components/ui/DialogProvider';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NoteEditor'>;
 
@@ -27,6 +22,10 @@ export function NoteEditorScreen({
   route,
   navigation,
 }: Props): React.JSX.Element {
+  const colors = useColors();
+  const {showSuccess, showError, showWarning} = useToast();
+  const {showConfirm} = useDialog();
+
   const {noteId} = route.params || {};
   const notes = useNotesStore(state => state.notes);
   const createNote = useNotesStore(state => state.createNote);
@@ -37,33 +36,106 @@ export function NoteEditorScreen({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [titleError, setTitleError] = useState('');
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const originalTitle = useRef('');
+  const originalContent = useRef('');
 
   const isEditMode = !!noteId;
 
-  // Load note nếu edit mode
+  /**
+   * Mục đích: Load note nếu edit mode
+   * Tham số vào: Không
+   * Tham số ra: void
+   * Khi nào dùng: Component mount với noteId
+   */
   useEffect(() => {
     if (noteId) {
       const note = notes.find(n => n.id === noteId);
       if (note) {
         setTitle(note.title);
         setContent(note.content || '');
+        originalTitle.current = note.title;
+        originalContent.current = note.content || '';
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [noteId]);
 
-  // Set header title
+  /**
+   * Mục đích: Set header title
+   * Tham số vào: Không
+   * Tham số ra: void
+   * Khi nào dùng: Component mount hoặc isEditMode thay đổi
+   */
   useEffect(() => {
     navigation.setOptions({
       title: isEditMode ? 'Chỉnh sửa ghi chú' : 'Tạo ghi chú mới',
     });
   }, [navigation, isEditMode]);
 
-  // Xử lý lưu
-  const handleSave = async () => {
+  /**
+   * Mục đích: Detect changes để hiển thị warning khi cancel
+   * Tham số vào: Không
+   * Tham số ra: void
+   * Khi nào dùng: title hoặc content thay đổi
+   */
+  useEffect(() => {
+    const changed =
+      title !== originalTitle.current || content !== originalContent.current;
+    setHasChanges(changed);
+  }, [title, content]);
+
+  /**
+   * Mục đích: Validate title input
+   * Tham số vào: value
+   * Tham số ra: boolean (valid or not)
+   * Khi nào dùng: Khi user nhập title
+   */
+  const validateTitle = useCallback((value: string): boolean => {
+    if (!value.trim()) {
+      setTitleError('Vui lòng nhập tiêu đề ghi chú');
+      return false;
+    }
+    if (value.trim().length < 3) {
+      setTitleError('Tiêu đề phải có ít nhất 3 ký tự');
+      return false;
+    }
+    if (value.trim().length > 100) {
+      setTitleError('Tiêu đề không được quá 100 ký tự');
+      return false;
+    }
+    setTitleError('');
+    return true;
+  }, []);
+
+  /**
+   * Mục đích: Handle title change
+   * Tham số vào: value
+   * Tham số ra: void
+   * Khi nào dùng: User nhập title
+   */
+  const handleTitleChange = useCallback(
+    (value: string) => {
+      setTitle(value);
+      if (titleError) {
+        validateTitle(value);
+      }
+    },
+    [titleError, validateTitle],
+  );
+
+  /**
+   * Mục đích: Xử lý lưu note
+   * Tham số vào: Không
+   * Tham số ra: Promise<void>
+   * Khi nào dùng: User nhấn nút lưu
+   */
+  const handleSave = useCallback(async () => {
     // Validation
-    if (!title.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập tiêu đề ghi chú');
+    if (!validateTitle(title)) {
+      showWarning('Vui lòng kiểm tra lại thông tin');
       return;
     }
 
@@ -76,156 +148,215 @@ export function NoteEditorScreen({
           title: title.trim(),
           content: content.trim() || undefined,
         });
-        Alert.alert('Thành công', 'Đã cập nhật ghi chú', [
-          {text: 'OK', onPress: () => navigation.goBack()},
-        ]);
+        showSuccess('Đã cập nhật ghi chú thành công');
+        navigation.goBack();
       } else {
         // Create new note
         await createNote({
           title: title.trim(),
           content: content.trim() || undefined,
         });
-        Alert.alert('Thành công', 'Đã tạo ghi chú mới', [
-          {text: 'OK', onPress: () => navigation.goBack()},
-        ]);
+        showSuccess('Đã tạo ghi chú mới thành công');
+        navigation.goBack();
       }
     } catch (error) {
-      Alert.alert('Lỗi', 'Không thể lưu ghi chú');
+      showError('Không thể lưu ghi chú');
       console.error('Lỗi khi lưu ghi chú:', error);
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [
+    title,
+    content,
+    isEditMode,
+    noteId,
+    validateTitle,
+    updateNote,
+    createNote,
+    navigation,
+    showSuccess,
+    showError,
+    showWarning,
+  ]);
 
-  // Xử lý xóa
-  const handleDelete = () => {
+  /**
+   * Mục đích: Xử lý xóa note
+   * Tham số vào: Không
+   * Tham số ra: void
+   * Khi nào dùng: User nhấn nút xóa
+   */
+  const handleDelete = useCallback(() => {
     if (!noteId) return;
 
-    Alert.alert(
+    showConfirm(
       'Xóa ghi chú',
       'Bạn có chắc muốn xóa ghi chú này? Tất cả báo thức liên quan cũng sẽ bị xóa.',
-      [
-        {text: 'Hủy', style: 'cancel'},
-        {
-          text: 'Xóa',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteNote(noteId);
-              Alert.alert('Thành công', 'Đã xóa ghi chú', [
-                {text: 'OK', onPress: () => navigation.goBack()},
-              ]);
-            } catch (error) {
-              Alert.alert('Lỗi', 'Không thể xóa ghi chú');
-              console.error('Lỗi khi xóa ghi chú:', error);
-            }
-          },
-        },
-      ],
+      async () => {
+        try {
+          await deleteNote(noteId);
+          showSuccess('Đã xóa ghi chú thành công');
+          navigation.goBack();
+        } catch (error) {
+          showError('Không thể xóa ghi chú');
+          console.error('Lỗi khi xóa ghi chú:', error);
+        }
+      },
     );
-  };
+  }, [noteId, deleteNote, navigation, showConfirm, showSuccess, showError]);
 
-  // Xử lý hủy
-  const handleCancel = () => {
-    if (title.trim() || content.trim()) {
-      Alert.alert(
+  /**
+   * Mục đích: Xử lý hủy/quay lại
+   * Tham số vào: Không
+   * Tham số ra: void
+   * Khi nào dùng: User nhấn nút hủy hoặc back
+   */
+  const handleCancel = useCallback(() => {
+    if (hasChanges) {
+      showConfirm(
         'Hủy thay đổi',
         'Bạn có chắc muốn hủy? Các thay đổi sẽ không được lưu.',
-        [
-          {text: 'Tiếp tục chỉnh sửa', style: 'cancel'},
-          {text: 'Hủy', style: 'destructive', onPress: () => navigation.goBack()},
-        ],
+        () => {
+          navigation.goBack();
+        },
       );
     } else {
       navigation.goBack();
     }
-  };
+  }, [hasChanges, navigation, showConfirm]);
 
+  // Loading state
   if (loading && isEditMode) {
     return (
-      <View className="flex-1 bg-white justify-center items-center">
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <Text className="text-gray-500 mt-4">Đang tải...</Text>
+      <View
+        className="flex-1 justify-center items-center"
+        style={{backgroundColor: colors.background}}>
+        <Animated.View entering={FadeIn.duration(400)}>
+          <Icon name="FileText" className="w-16 h-16 text-primary mb-4" />
+          <AppText variant="body" className="text-neutrals400">
+            Đang tải ghi chú...
+          </AppText>
+        </Animated.View>
       </View>
     );
   }
 
+  const titleLength = title.trim().length;
+  const contentLength = content.trim().length;
+
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-white"
+      className="flex-1"
+      style={{backgroundColor: colors.background}}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
+      <ScrollView
+        className="flex-1"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
         <View className="p-4">
           {/* Title input */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Tiêu đề <Text className="text-red-500">*</Text>
-            </Text>
-            <TextInput
-              className="bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-800 text-lg"
+          <Animated.View entering={FadeInDown.delay(100).springify()} className="mb-4">
+            <View className="flex-row items-center justify-between mb-2">
+              <AppText variant="body" weight="semibold" className="text-foreground">
+                Tiêu đề <AppText variant="body" className="text-error" raw>*</AppText>
+              </AppText>
+              <AppText
+                variant="caption"
+                className={
+                  titleLength > 100 ? 'text-error' : 'text-neutrals400'
+                }
+                raw>
+                {titleLength}/100
+              </AppText>
+            </View>
+
+            <AppInput
               placeholder="Nhập tiêu đề ghi chú..."
               value={title}
-              onChangeText={setTitle}
-              placeholderTextColor="#9CA3AF"
+              onChangeText={handleTitleChange}
               autoFocus={!isEditMode}
+              errorText={titleError}
+              leftIcon={<Icon name="FileText" className="w-5 h-5 text-neutrals400" />}
             />
-          </View>
+          </Animated.View>
 
           {/* Content input */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Nội dung
-            </Text>
-            <TextInput
-              className="bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-800"
+          <Animated.View entering={FadeInDown.delay(200).springify()} className="mb-4">
+            <View className="flex-row items-center justify-between mb-2">
+              <AppText variant="body" weight="semibold" className="text-foreground">
+                Nội dung
+              </AppText>
+              <AppText variant="caption" className="text-neutrals400" raw>
+                {contentLength} ký tự
+              </AppText>
+            </View>
+
+            <AppInput
               placeholder="Nhập nội dung ghi chú..."
               value={content}
               onChangeText={setContent}
-              placeholderTextColor="#9CA3AF"
               multiline
               numberOfLines={10}
               textAlignVertical="top"
               style={{minHeight: 200}}
+              leftIcon={<Icon name="FileType" className="w-5 h-5 text-neutrals400" />}
             />
-          </View>
+          </Animated.View>
+
+          {/* Info card */}
+          {hasChanges && (
+            <Animated.View
+              entering={FadeInDown.springify()}
+              style={{
+                backgroundColor: colors.warning + '20',
+                borderColor: colors.warning + '40',
+              }}
+              className="p-3 rounded-lg border mb-4 flex-row items-center gap-2">
+              <Icon name="Info" className="w-5 h-5 text-warning" />
+              <AppText variant="bodySmall" className="text-warning flex-1">
+                Bạn có thay đổi chưa lưu
+              </AppText>
+            </Animated.View>
+          )}
 
           {/* Action buttons */}
-          <View className="space-y-3">
-            <TouchableOpacity
-              className={`py-3 rounded-lg ${
-                isSaving ? 'bg-gray-400' : 'bg-blue-500'
-              }`}
+          <Animated.View entering={FadeInDown.delay(300).springify()} className="gap-3">
+            <AppButton
+              variant="primary"
               onPress={handleSave}
+              loading={isSaving}
               disabled={isSaving}>
-              {isSaving ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white text-center font-semibold text-lg">
+              <View className="flex-row items-center gap-2">
+                <Icon name="Save" className="w-5 h-5 text-background" />
+                <AppText variant="body" weight="semibold" className="text-background" raw>
                   {isEditMode ? 'Cập nhật' : 'Tạo ghi chú'}
-                </Text>
-              )}
-            </TouchableOpacity>
+                </AppText>
+              </View>
+            </AppButton>
 
-            <TouchableOpacity
-              className="bg-gray-200 py-3 rounded-lg"
-              onPress={handleCancel}
-              disabled={isSaving}>
-              <Text className="text-gray-700 text-center font-semibold text-lg">
-                Hủy
-              </Text>
-            </TouchableOpacity>
+            <AppButton variant="outline" onPress={handleCancel} disabled={isSaving}>
+              <View className="flex-row items-center gap-2">
+                <Icon name="X" className="w-5 h-5 text-foreground" />
+                <AppText variant="body" weight="semibold" className="text-foreground" raw>
+                  Hủy
+                </AppText>
+              </View>
+            </AppButton>
 
             {isEditMode && (
-              <TouchableOpacity
-                className="bg-red-500 py-3 rounded-lg"
+              <AppButton
+                variant="ghost"
                 onPress={handleDelete}
-                disabled={isSaving}>
-                <Text className="text-white text-center font-semibold text-lg">
-                  Xóa ghi chú
-                </Text>
-              </TouchableOpacity>
+                disabled={isSaving}
+                className="border border-error/30">
+                <View className="flex-row items-center gap-2">
+                  <Icon name="Trash2" className="w-5 h-5 text-error" />
+                  <AppText variant="body" weight="semibold" className="text-error" raw>
+                    Xóa ghi chú
+                  </AppText>
+                </View>
+              </AppButton>
             )}
-          </View>
+          </Animated.View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
