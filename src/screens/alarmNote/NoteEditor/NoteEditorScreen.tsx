@@ -274,151 +274,196 @@ export function NoteEditorScreen({
   const contentLength = content.trim().length;
 
   return (
-    <View className="flex-1" style={{backgroundColor: colors.background}}>
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         <ScrollView
           className="flex-1"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{paddingBottom: isKeyboardVisible ? 0 : 16}}>
+          contentContainerStyle={{ paddingBottom: isKeyboardVisible ? 0 : 16 }}
+        >
           <View className="p-4">
-          {/* Title input */}
-          <Animated.View entering={FadeInDown.delay(100).springify()} className="mb-4">
-            <View className="flex-row items-center justify-between mb-2">
-              <AppText variant="body" weight="semibold" className="text-foreground">
-                Tiêu đề <AppText variant="body" className="text-error" raw>*</AppText>
-              </AppText>
-              <AppText
-                variant="caption"
-                className={
-                  titleLength > 100 ? 'text-error' : 'text-neutrals400'
-                }
-                raw>
-                {titleLength}/100
-              </AppText>
-            </View>
-
-            <AppInput
-              placeholder="Nhập tiêu đề ghi chú..."
-              value={title}
-              onChangeText={handleTitleChange}
-              autoFocus={!isEditMode}
-              errorText={titleError}
-              leftIcon={<Icon name="FileText" className="w-5 h-5 text-neutrals400" />}
-              returnKeyType="next"
-              onSubmitEditing={() => {
-                // Focus vào content input khi nhấn Enter/Done
-                contentInputRef.current?.focus();
-              }}
-            />
-          </Animated.View>
-
-          {/* Content input */}
-          <Animated.View entering={FadeInDown.delay(200).springify()} className="mb-4">
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center gap-2">
-                <View
-                  className="w-8 h-8 rounded-lg items-center justify-center"
-                  style={{backgroundColor: colors.primary + '20'}}>
-                  <Icon name="FileText" className="w-4 h-4 text-primary" />
-                </View>
-                <AppText variant="body" weight="semibold" className="text-foreground">
-                  Nội dung ghi chú
-                </AppText>
-              </View>
-              <View
-                className="px-2 py-1 rounded-md"
-                style={{backgroundColor: colors.neutrals900}}>
-                <AppText variant="caption" className="text-neutrals400">
-                  {contentLength} / 5000
-                </AppText>
-              </View>
-            </View>
-
-            <View
-              className="rounded-xl border-2 overflow-hidden"
-              style={{
-                backgroundColor: colors.neutrals1000,
-                borderColor: content ? colors.primary + '40' : colors.neutrals800,
-              }}>
-              <AppInput
-                ref={contentInputRef}
-                placeholder="..."
-                value={content}
-                onChangeText={setContent}
-                multiline={true}
-                numberOfLines={12}
-                variant="textarea"
-                textAlignVertical="top"
-                returnKeyType="done"
-                onSubmitEditing={() => {
-                  // Nhấn Enter/Done → Tự động save
-                  Keyboard.dismiss();
-                  handleSave();
-                }}
-                style={{
-                  minHeight: 240,
-                  paddingTop: 16,
-                  paddingBottom: 16,
-                  fontSize: 15,
-                  lineHeight: 22,
-                }}
-                className="border-0"
-              />
-
-              {/* Footer helper */}
-              <View
-                className="px-4 py-3 border-t flex-row items-center gap-2"
-                style={{
-                  backgroundColor: colors.neutrals900,
-                  borderTopColor: colors.neutrals800,
-                }}>
-                <Icon name="Info" className="w-4 h-4 text-neutrals400" />
-                <AppText variant="caption" className="text-neutrals400">
-                  Nội dung này sẽ được hiển thị trong chi tiết ghi chú
-                </AppText>
-              </View>
-            </View>
-          </Animated.View>
-
-          {/* Info card */}
-          {hasChanges && (
+            {/* Title input */}
             <Animated.View
-              entering={FadeInDown.springify()}
-              style={{
-                backgroundColor: colors.warning + '20',
-                borderColor: colors.warning + '40',
-              }}
-              className="p-3 rounded-lg border mb-4 flex-row items-center gap-2">
-              <Icon name="Info" className="w-5 h-5 text-warning" />
-              <AppText variant="bodySmall" className="text-warning flex-1">
-                Bạn có thay đổi chưa lưu
-              </AppText>
-            </Animated.View>
-          )}
+              entering={FadeInDown.delay(100).springify()}
+              className="mb-4"
+            >
+              <View className="flex-row items-center justify-between mb-2">
+                <AppText
+                  variant="body"
+                  weight="semibold"
+                  className="text-foreground"
+                >
+                  Tiêu đề{" "}
+                  <AppText variant="body" className="text-error" raw>
+                    *
+                  </AppText>
+                </AppText>
+                <AppText
+                  variant="caption"
+                  className={
+                    titleLength > 100 ? "text-error" : "text-neutrals400"
+                  }
+                  raw
+                >
+                  {titleLength}/100
+                </AppText>
+              </View>
 
-          {/* Action buttons - Chỉ hiển thị khi keyboard ẩn */}
-          {!isKeyboardVisible && (
-            <Animated.View entering={FadeInDown.delay(300).springify()} className="gap-3">
+              <AppInput
+                placeholder="Nhập tiêu đề ghi chú..."
+                value={title}
+                onChangeText={handleTitleChange}
+                autoFocus={!isEditMode}
+                errorText={titleError}
+                leftIcon={
+                  <Icon name="FileText" className="w-5 h-5 text-neutrals400" />
+                }
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  // Focus vào content input khi nhấn Enter/Done
+                  contentInputRef.current?.focus();
+                }}
+              />
+            </Animated.View>
+
+            {/* Content input */}
+            <Animated.View
+              entering={FadeInDown.delay(200).springify()}
+              className="mb-4"
+            >
+              <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-row items-center gap-2">
+                  <View
+                    className="w-8 h-8 rounded-lg items-center justify-center"
+                    style={{ backgroundColor: colors.primary + "20" }}
+                  >
+                    <Icon name="FileText" className="w-4 h-4 text-primary" />
+                  </View>
+                  <AppText
+                    variant="body"
+                    weight="semibold"
+                    className="text-foreground"
+                  >
+                    Nội dung ghi chú
+                  </AppText>
+                </View>
+                <View
+                  className="px-2 py-1 rounded-md"
+                  style={{ backgroundColor: colors.neutrals900 }}
+                >
+                  <AppText variant="caption" className="text-neutrals400">
+                    {contentLength} / 5000
+                  </AppText>
+                </View>
+              </View>
+
+              <View
+                className="rounded-xl border-2 overflow-hidden"
+                style={{
+                  backgroundColor: colors.neutrals1000,
+                  borderColor: content
+                    ? colors.primary + "40"
+                    : colors.neutrals800,
+                }}
+              >
+                <AppInput
+                  ref={contentInputRef}
+                  placeholder="..."
+                  value={content}
+                  onChangeText={setContent}
+                  multiline={true}
+                  numberOfLines={12}
+                  variant="textarea"
+                  textAlignVertical="top"
+                  returnKeyType="done"
+                  onSubmitEditing={() => {
+                    // Nhấn Enter/Done → Tự động save
+                    Keyboard.dismiss();
+                    handleSave();
+                  }}
+                  style={{
+                    minHeight: 240,
+                    paddingTop: 16,
+                    paddingBottom: 16,
+                    fontSize: 15,
+                    lineHeight: 22,
+                  }}
+                  className="border-0"
+                />
+
+                {/* Footer helper */}
+                <View
+                  className="px-4 py-3 border-t flex-row items-center gap-2"
+                  style={{
+                    backgroundColor: colors.neutrals900,
+                    borderTopColor: colors.neutrals800,
+                  }}
+                >
+                  <Icon name="Info" className="w-4 h-4 text-neutrals400" />
+                  <AppText variant="caption" className="text-neutrals400">
+                    Nội dung này sẽ được hiển thị trong chi tiết ghi chú
+                  </AppText>
+                </View>
+              </View>
+            </Animated.View>
+
+            {/* Info card */}
+            {hasChanges && (
+              <Animated.View
+                entering={FadeInDown.springify()}
+                style={{
+                  backgroundColor: colors.warning + "20",
+                  borderColor: colors.warning + "40",
+                }}
+                className="p-3 rounded-lg border mb-4 flex-row items-center gap-2"
+              >
+                <Icon name="Info" className="w-5 h-5 text-warning" />
+                <AppText variant="bodySmall" className="text-warning flex-1">
+                  Bạn có thay đổi chưa lưu
+                </AppText>
+              </Animated.View>
+            )}
+
+            <Animated.View
+              entering={FadeInDown.delay(300).springify()}
+              className="gap-3"
+            >
               <AppButton
                 variant="primary"
                 onPress={handleSave}
                 loading={isSaving}
-                disabled={isSaving}>
+                disabled={isSaving}
+              >
                 <View className="flex-row items-center gap-2">
                   <Icon name="Save" className="w-5 h-5 text-background" />
-                  <AppText variant="body" weight="semibold" className="text-background" raw>
-                    {isEditMode ? 'Cập nhật' : 'Tạo ghi chú'}
+                  <AppText
+                    variant="body"
+                    weight="semibold"
+                    className="text-background"
+                    raw
+                  >
+                    {isEditMode ? "Cập nhật" : "Tạo ghi chú"}
                   </AppText>
                 </View>
               </AppButton>
 
-              <AppButton variant="outline" onPress={handleCancel} disabled={isSaving}>
+              <AppButton
+                variant="outline"
+                onPress={handleCancel}
+                disabled={isSaving}
+              >
                 <View className="flex-row items-center gap-2">
                   <Icon name="X" className="w-5 h-5 text-foreground" />
-                  <AppText variant="body" weight="semibold" className="text-foreground" raw>
+                  <AppText
+                    variant="body"
+                    weight="semibold"
+                    className="text-foreground"
+                    raw
+                  >
                     Hủy
                   </AppText>
                 </View>
@@ -429,23 +474,28 @@ export function NoteEditorScreen({
                   variant="ghost"
                   onPress={handleDelete}
                   disabled={isSaving}
-                  className="border border-error/30">
+                  className="border border-error/30"
+                >
                   <View className="flex-row items-center gap-2">
                     <Icon name="Trash2" className="w-5 h-5 text-error" />
-                    <AppText variant="body" weight="semibold" className="text-error" raw>
+                    <AppText
+                      variant="body"
+                      weight="semibold"
+                      className="text-error"
+                      raw
+                    >
                       Xóa ghi chú
                     </AppText>
                   </View>
                 </AppButton>
               )}
             </Animated.View>
-          )}
-        </View>
-      </ScrollView>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Sticky buttons khi keyboard hiển thị */}
-      {isKeyboardVisible && (
+      {/* {isKeyboardVisible && (
         <Animated.View
           entering={FadeInDown.springify()}
           style={{
@@ -453,30 +503,46 @@ export function NoteEditorScreen({
             borderTopColor: colors.border,
             paddingBottom: insets.bottom || 16,
           }}
-          className="border-t px-4 pt-3 gap-3">
+          className="border-t px-4 pt-3 gap-3"
+        >
           <AppButton
             variant="primary"
             onPress={handleSave}
             loading={isSaving}
-            disabled={isSaving}>
+            disabled={isSaving}
+          >
             <View className="flex-row items-center gap-2">
               <Icon name="Save" className="w-5 h-5 text-background" />
-              <AppText variant="body" weight="semibold" className="text-background" raw>
-                {isEditMode ? 'Cập nhật' : 'Tạo ghi chú'}
+              <AppText
+                variant="body"
+                weight="semibold"
+                className="text-background"
+                raw
+              >
+                {isEditMode ? "Cập nhật" : "Tạo ghi chú"}
               </AppText>
             </View>
           </AppButton>
 
-          <AppButton variant="outline" onPress={handleCancel} disabled={isSaving}>
+          <AppButton
+            variant="outline"
+            onPress={handleCancel}
+            disabled={isSaving}
+          >
             <View className="flex-row items-center gap-2">
               <Icon name="X" className="w-5 h-5 text-foreground" />
-              <AppText variant="body" weight="semibold" className="text-foreground" raw>
+              <AppText
+                variant="body"
+                weight="semibold"
+                className="text-foreground"
+                raw
+              >
                 Hủy
               </AppText>
             </View>
           </AppButton>
         </Animated.View>
-      )}
+      )} */}
     </View>
   );
 }

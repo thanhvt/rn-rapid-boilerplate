@@ -274,13 +274,13 @@ async function scheduleRepeatingAlarm(
     };
 
     // Format notification body
-    let body = `⏰ Báo thức lặp lại mỗi ${dayNames[weekday]} lúc ${alarm.timeHHmm}`;
-    if (noteContent) {
-      const contentPreview = noteContent.length > 100
-        ? noteContent.substring(0, 100) + '...'
-        : noteContent;
-      body += `\n\n${contentPreview}`;
-    }
+    let body = `⏰ ${noteContent || 'Báo thức'}`;
+    // if (noteContent) {
+    //   const contentPreview = noteContent.length > 100
+    //     ? noteContent.substring(0, 100) + '...'
+    //     : noteContent;
+    //   body += `\n\n${contentPreview}`;
+    // }
 
     // Schedule notification cho ngày này
     await notifee.createTriggerNotification(
@@ -288,7 +288,7 @@ async function scheduleRepeatingAlarm(
         id: `${alarm.id}-${weekday}`, // Unique ID cho mỗi ngày
         title: `🔔 ${noteTitle}`,
         body: body,
-        subtitle: 'Báo thức lặp lại',
+        // subtitle: 'Báo thức lặp lại',
         data: {
           alarmId: alarm.id,
           noteId: alarm.noteId,

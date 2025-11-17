@@ -185,20 +185,20 @@ export function AlarmManagerScreen({
         {/* Stats */}
         <View className="flex-row items-center gap-2">
           <Badge variant="primary" size="sm">
-            <AppText variant="caption" className="text-white">
+            <AppText variant="labelSmall" className="text-white">
               {alarms.length} báo thức
             </AppText>
           </Badge>
           {enabledCount > 0 && (
             <Badge variant="success" size="sm">
-              <AppText variant="caption" className="text-success">
+              <AppText variant="labelSmall" className="text-success">
                 {enabledCount} đang bật
               </AppText>
             </Badge>
           )}
           {disabledCount > 0 && (
             <Badge variant="default" size="sm">
-              <AppText variant="caption" className="text-neutrals100">
+              <AppText variant="labelSmall" className="text-neutrals100">
                 {disabledCount} đã tắt
               </AppText>
             </Badge>

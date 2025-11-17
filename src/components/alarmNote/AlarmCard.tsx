@@ -146,7 +146,7 @@ export function AlarmCard({
                     : 'secondary'
                 }
                 size="sm">
-                <AppText variant="caption" className="text-white" raw>
+                <AppText variant="overline" className="text-white" raw>
                   {alarm.type === 'REPEATING'
                     ? 'Lặp lại'
                     : alarm.type === 'RANDOM'
@@ -162,7 +162,7 @@ export function AlarmCard({
               )}
 
               {alarm.type === 'RANDOM' && alarm.daysOfWeek && alarm.daysOfWeek.length > 0 && (
-                <AppText variant="caption" className="text-neutrals400">
+                <AppText variant="label" className="text-neutrals400">
                   {alarm.daysOfWeek.map(d => getDayName(d)).join(', ')}
                 </AppText>
               )}
@@ -176,7 +176,7 @@ export function AlarmCard({
                     key={day}
                     className="px-2 py-0.5 rounded"
                     style={{backgroundColor: colors.primary + '20'}}>
-                    <AppText variant="caption" className="text-primary">
+                    <AppText variant="labelSmall" className="text-primary">
                       {getDayName(day)}: {alarm.randomTimes![day] || '??:??'}
                     </AppText>
                   </View>
