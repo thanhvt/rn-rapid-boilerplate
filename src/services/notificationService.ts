@@ -410,20 +410,19 @@ async function scheduleRandomAlarm(
 
     // Format notification body
     const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-    let body = `🎲 Báo thức ngẫu nhiên vào ${dayNames[weekday]} lúc ${timeHHmm}`;
-    if (noteContent) {
-      const contentPreview = noteContent.length > 100
-        ? noteContent.substring(0, 100) + '...'
-        : noteContent;
-      body += `\n\n${contentPreview}`;
-    }
+    // let body = `🎲 Báo thức ngẫu nhiên vào ${dayNames[weekday]} lúc ${timeHHmm}`;
+    // if (noteContent) {
+    //   const contentPreview = noteContent.length > 100
+    //     ? noteContent.substring(0, 100) + '...'
+    //     : noteContent;
+    //   body += `\n\n${contentPreview}`;
+    // }
 
     await notifee.createTriggerNotification(
       {
         id: notificationId,
-        title: `🔔 ${noteTitle}`,
-        body: body,
-        subtitle: 'Báo thức ngẫu nhiên',
+        title: `🔔 ${noteTitle} 🎲 `,
+        body: `${noteContent}`,
         data: {
           alarmId: alarm.id,
           noteId: alarm.noteId,
